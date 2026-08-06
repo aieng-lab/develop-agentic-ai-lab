@@ -1,0 +1,293 @@
+% Part C -- Knowledge quiz, FORM A (20 items).
+%
+% Every item here has a counterpart in part_c_form_b.tex occupying the same
+% blueprint cell (same topic, Bloom level, target difficulty and targeted
+% misconception) with a different scenario and no shared stem wording.
+% See docs/blueprint.md for the full mapping.
+%
+% Key positions are balanced: 5 items each with the key at (a), (b), (c), (d).
+%
+% The quiz was cut from 28 to 20 items on 2026-08-05. The eight retired A/B
+% pairs are archived verbatim in common/deprecated_items.tex, which also records
+% the old-to-new numbering.
+
+\partheading{C}{Knowledge questions}
+
+\instruction{20 questions, each with exactly one best answer. Tick one box per question. If you do not
+know, please tick ``I do not know'' rather than guessing --- an honest blank is more useful to us than a
+lucky guess, and none of this affects your grade. Plan for about 15 minutes.}
+
+\begin{questions}
+
+% ===== The model and its context =====================================
+
+% --- Item 1: T1 / remember / easy -------------------------------------
+\qitem The LLM in an agentic system is usually described as \emph{stateless across calls}. What does
+that mean?
+\begin{choices}
+  \choice Its weights are frozen, so it cannot be adapted to new data.
+  \CorrectChoice It retains nothing from one call to the next, so everything it needs must be supplied in the current request.
+  \choice The provider stores the conversation and reloads it automatically for each call.
+  \choice It returns the same output for the same input, because it holds no random state.
+\end{choices}
+\dontknow
+\itemmeta{T1 --- LLM role \& statelessness}{remember}{easy}{A01}
+\rationale{Statelessness is about the call boundary, not about training. (a) confuses statelessness with
+frozen weights; (c) is the opposite of statelessness; (d) confuses it with determinism.}
+
+% --- Item 2: T2 / understand / medium ---------------------------------
+\qitem Why does a harness try to keep the context small even in runs that are nowhere near filling the
+context window?
+\begin{choices}
+  \CorrectChoice Because model performance degrades as the window fills, so the goal is the smallest set of high-signal tokens that still produces the desired behaviour.
+  \choice Because tokens that are not needed in the current step are discarded by the model anyway.
+  \choice Because the context window is shared between all agents using the same endpoint.
+  \choice Because a shorter context guarantees that the loop terminates in fewer iterations.
+\end{choices}
+\dontknow
+\itemmeta{T2 --- Context engineering}{understand}{medium}{A02}
+\rationale{This is context rot: the constraint is degradation, not the hard limit. Distractors treat the
+window as a hard limit only, as shared state, or as a loop bound.}
+
+% --- Item 3: T2 / apply-analyse / hard --------------------------------
+\qitem A run has grown so long that the context no longer fits. The team wants to keep the agent
+coherent while spending fewer tokens. Which pair of measures matches this goal?
+\begin{choices}
+  \choice Raise the temperature so the model relies less on the context, and shorten the system prompt.
+  \choice Split the context evenly across several LLM calls and merge the answers afterwards.
+  \CorrectChoice Summarise the older turns, and move state that is not needed right now to external storage that can be read back on demand.
+  \choice Drop the tool schemas from the request, since the model has already used those tools once.
+\end{choices}
+\dontknow
+\itemmeta{T2 --- Context engineering}{apply-analyse}{hard}{A03}
+\rationale{Compaction plus offloading. (d) is attractive but breaks tool calling, because schemas are not
+remembered across calls --- it also tests T1.}
+
+% ===== The loop, tools, MCP and skills ===============================
+
+% --- Item 4: T3 / understand / medium ---------------------------------
+\qitem Why does the loop need guard conditions such as an iteration cap or a token budget?
+\begin{choices}
+  \CorrectChoice Because the LLM may return neither a final answer nor a valid action, and without a bound the loop would never terminate.
+  \choice Because the model provider charges a penalty for requests above a fixed rate.
+  \choice Because every iteration adds a tool to the registry, which would eventually exhaust the schema limit.
+  \choice Because the user must be given a chance to intervene after a fixed number of steps.
+\end{choices}
+\dontknow
+\itemmeta{T3 --- Loop and control flow}{understand}{medium}{A04}
+\rationale{Guards guarantee termination. (d) confuses guard conditions with permission gates.}
+
+% --- Item 5: T3 / apply-analyse / hard --------------------------------
+\qitem A team extends their loop so that the agent first writes a plan for the task and then executes
+it. What must the loop now do that a plain ReAct loop does not?
+\begin{choices}
+  \choice Call the LLM twice per iteration, once for reasoning and once for acting.
+  \choice Persist the plan to long-term memory before any tool may be called.
+  \choice Disable its iteration cap, because the plan already bounds the number of steps.
+  \CorrectChoice Contrast the progress made so far against that initial plan on each pass through the loop.
+\end{choices}
+\dontknow
+\itemmeta{T3 --- Loop and control flow}{apply-analyse}{hard}{A05}
+\rationale{Up-front planning adds a comparison against the plan. (c) is the dangerous misconception:
+a plan is not a termination guarantee.}
+
+% --- Item 6: T4 / remember / easy -------------------------------------
+\qitem Which of the following best describes a \emph{tool} in an agentic system?
+\begin{choices}
+  \choice A store of facts that survives from one agent run to the next.
+  \CorrectChoice An interface with a defined schema through which the agent retrieves information or acts on an environment.
+  \choice A prompt template that instructs the model how to solve a class of tasks.
+  \choice The component that decides which action the agent should take next.
+\end{choices}
+\dontknow
+\itemmeta{T4 --- Tools and tool design}{remember}{easy}{A06}
+\rationale{The distractors are the neighbouring components: long-term memory (a), a skill (c), the LLM/loop (d).}
+
+% --- Item 7: T4 / apply-analyse / hard --------------------------------
+\qitem A \texttt{read\_file} tool returns an empty string both when the file is empty and when the path
+does not exist. What is the most likely consequence for the agent?
+\begin{choices}
+  \choice It retries the call with the same arguments until the loop's iteration cap is reached.
+  \choice The tool registry rejects the call, because an empty result violates the tool's schema.
+  \CorrectChoice It cannot tell the two situations apart and reasons on from a wrong observation, because the failure was never communicated to it.
+  \choice The loop enters its terminal state, because an empty observation carries no information.
+\end{choices}
+\dontknow
+\itemmeta{T4 --- Tools and tool design}{apply-analyse}{hard}{A07}
+\rationale{Tool failures must be communicated upstream. Silent, ambiguous success values are worse than
+errors because the agent has no signal that anything went wrong.}
+
+% --- Item 8: T5 / remember / easy -------------------------------------
+\qitem What is the Model Context Protocol (MCP)?
+\begin{choices}
+  \choice A language model specialised in managing an agent's context window.
+  \CorrectChoice A protocol through which an agent connects to servers that expose tools and other capabilities.
+  \choice A file format for storing an agent's long-term memory between runs.
+  \choice A specification of how much context a model must be able to process.
+\end{choices}
+\dontknow
+\itemmeta{T5 --- MCP}{remember}{easy}{A08}
+\rationale{(a) and (d) target the widespread ``MCP is a model / a context size standard'' confusion
+invited by the name.}
+
+% --- Item 9: T5 / apply-analyse / medium ------------------------------
+\qitem A requirement says the tools of an MCP server must be made available to the model \emph{without
+hard-coding individual tools}. What does the harness have to do?
+\begin{choices}
+  \choice Generate a Python wrapper function per tool before the application is built.
+  \choice Keep a configuration file that lists every tool name the server is known to provide.
+  \choice Ask the model which tools it thinks exist and validate its guesses against the server.
+  \CorrectChoice Query the server for its tool list at runtime and pass the returned schemas on to the model.
+\end{choices}
+\dontknow
+\itemmeta{T5 --- MCP}{apply-analyse}{medium}{A09}
+\rationale{Runtime discovery. (a) and (b) are both hard-coding, just at different times.}
+
+% --- Item 10: T6 / understand / medium --------------------------------
+\qitem Why does a harness usually \emph{not} keep all available skills in the context at all times?
+\begin{choices}
+  \choice Because skills may contradict one another if more than one is loaded at a time.
+  \choice Because the model can execute only one skill per run.
+  \choice Because a skill has to be validated by a hook before it may enter the context.
+  \CorrectChoice Because the context should carry only what the current task needs; a skill is disclosed when the task calls for it.
+\end{choices}
+\dontknow
+\itemmeta{T6 --- Skills}{understand}{medium}{A10}
+\rationale{Just-in-time disclosure follows from the context budget, not from conflicts between skills.}
+
+% ===== Memory, hooks, permissions, sandboxing and sub-agents =========
+
+% --- Item 11: T7 / remember / easy ------------------------------------
+\qitem What characterises long-term memory, as opposed to context?
+\begin{choices}
+  \choice It is the part of the context window that is never summarised away.
+  \choice It is the conversation history of the current run, kept in full.
+  \CorrectChoice It lives outside the context window, persists across runs, and is consulted on demand.
+  \choice It is the larger context window offered by models that support one.
+\end{choices}
+\dontknow
+\itemmeta{T7 --- Long-term memory}{remember}{easy}{A11}
+\rationale{(d) is the ``long-term memory is just a bigger window'' misconception.}
+
+% --- Item 12: T8 / remember / easy ------------------------------------
+\qitem What is a hook in an agent harness?
+\begin{choices}
+  \choice A tool the agent may call to inspect its own state.
+  \CorrectChoice A custom function that runs at a defined point in the agent's lifecycle, such as before a tool call.
+  \choice A connection to an external server from which tools are discovered.
+  \choice A rule that decides whether the agent needs the user's approval.
+\end{choices}
+\dontknow
+\itemmeta{T8 --- Hooks}{remember}{easy}{A12}
+\rationale{Distractors are, in order, a tool, an MCP connection and a permission policy.}
+
+% --- Item 13: T8 / apply-analyse / medium -----------------------------
+\qitem A team wants to block any tool call whose arguments point outside the sandbox root, \emph{before}
+it is executed. Which mechanism is designed for that?
+\begin{choices}
+  \CorrectChoice A pre-use hook that inspects the arguments and can reject the call.
+  \choice A post-use hook that reports the violation once the tool has run.
+  \choice A sub-agent that reviews the main agent's proposed actions.
+  \choice A longer system prompt instructing the model never to leave the sandbox.
+\end{choices}
+\dontknow
+\itemmeta{T8 --- Hooks}{apply-analyse}{medium}{A13}
+\rationale{(d) is the ``prompt instead of enforce'' misconception; (b) has the right mechanism but the
+wrong lifecycle point.}
+
+% --- Item 14: T9 / understand / easy ----------------------------------
+\qitem In a tiered permission model, which operation belongs in the tier that requires mandatory
+confirmation by the user?
+\begin{choices}
+  \choice Listing the files in the agent's working directory.
+  \choice Running the project's unit tests inside the container.
+  \choice Reading a configuration file in the sandbox.
+  \CorrectChoice Opening a pull request against a public repository.
+\end{choices}
+\dontknow
+\itemmeta{T9 --- Permission management}{understand}{easy}{A14}
+\rationale{The criterion is whether the consequences are irreversible or leave the sandbox, not how
+complicated the operation is.}
+
+% --- Item 15: T9 / understand / medium --------------------------------
+\qitem A permission policy supports the outcomes \emph{allow}, \emph{deny} and \emph{require user
+confirmation}. Why is the third outcome needed rather than deciding every case in advance?
+\begin{choices}
+  \choice Because the policy engine cannot evaluate its rules fast enough to keep the loop responsive.
+  \choice Because the model cannot produce arguments that a static rule would be able to check.
+  \CorrectChoice Because for some actions the consequences depend on the situation, so the judgement has to be handed to a human at the moment it arises.
+  \choice Because denying an action would end the run, which the harness has to avoid.
+\end{choices}
+\dontknow
+\itemmeta{T9 --- Permission management}{understand}{medium}{A15}
+\rationale{Human-in-the-loop gates exist for context-dependent risk. (d) misstates what a denial does.}
+
+% --- Item 16: T10 / understand / medium -------------------------------
+\qitem Besides containment, what second benefit does a stable sandbox provide?
+\begin{choices}
+  \choice Lower latency, because the sandboxed environment sits closer to the model endpoint.
+  \choice A guarantee that the agent cannot loop indefinitely.
+  \choice Automatic approval of low-risk actions without asking the user.
+  \CorrectChoice Reproducibility: the same command, seed and dependency set can be replayed under comparable conditions, so a failure reflects a real defect rather than environment drift.
+\end{choices}
+\dontknow
+\itemmeta{T10 --- Sandboxing}{understand}{medium}{A16}
+\rationale{Reproducibility is the second stated purpose of containerisation in this lab. (b) and (c)
+attribute loop control and permission decisions to the sandbox.}
+
+% --- Item 17: T11 / understand / medium -------------------------------
+\qitem A main agent delegates a subtask to a specialised sub-agent. What does the main agent get back,
+and why does that matter?
+\begin{choices}
+  \CorrectChoice A condensed result, so that the sub-agent's detailed intermediate work never enters the main agent's context.
+  \choice The sub-agent's full transcript, so that the main agent can verify every step it took.
+  \choice The sub-agent's tool schemas, so that the main agent could repeat the work itself.
+  \choice Nothing --- the sub-agent writes its result to long-term memory, which the main agent reads later.
+\end{choices}
+\dontknow
+\itemmeta{T11 --- Sub-agents and A2A}{understand}{medium}{A17}
+\rationale{The point of delegation is context isolation; (b) would defeat it entirely.}
+
+% ===== Observability and quality assurance ===========================
+
+% --- Item 18: T12 / understand / easy ---------------------------------
+\qitem Which set of measurements is most relevant for monitoring an agentic system in operation?
+\begin{choices}
+  \CorrectChoice Run throughput and latency, success and failure rates, model and token usage, tool usage, and permission decisions.
+  \choice CPU temperature, disk fragmentation, and the number of open file descriptors.
+  \choice The number of lines of code in the harness and its test coverage.
+  \choice The model's parameter count, context window size, and training cut-off date.
+\end{choices}
+\dontknow
+\itemmeta{T12 --- Observability and telemetry}{understand}{easy}{A18}
+\rationale{(c) measures the codebase and (d) the model, neither of which changes while the system runs.}
+
+% --- Item 19: T12 / apply-analyse / medium ----------------------------
+\qitem Your dashboard shows that the tool failure rate rose from 2\% to 20\% this morning. What do you
+need \emph{in addition} to the aggregate metrics in order to find the cause?
+\begin{choices}
+  \choice A longer retention period for the same aggregate counters.
+  \choice A second dashboard showing the same metrics with a finer colour scale.
+  \CorrectChoice Structured logs or traces that let you inspect what happened inside individual runs.
+  \choice More frequent scraping, so that the same counters are sampled at a finer time resolution.
+\end{choices}
+\dontknow
+\itemmeta{T12 --- Observability and telemetry}{apply-analyse}{medium}{A19}
+\rationale{Aggregates detect; traces diagnose. (d) improves resolution of the same aggregate signal and
+still cannot explain a single run.}
+
+% --- Item 20: T13 / understand / medium -------------------------------
+\qitem An end-to-end test instructs the agent to create \texttt{output/answer.md} containing the text
+\texttt{forty-two}. Which assertion is robust against the agent's non-determinism?
+\begin{choices}
+  \choice The agent called \texttt{create\_folder} before \texttt{create\_file}.
+  \CorrectChoice The file exists at that path and its contents are exactly the expected text.
+  \choice The agent needed exactly two tool calls to complete the task.
+  \choice The agent's final message contains the sentence ``I have created the file.''
+\end{choices}
+\dontknow
+\itemmeta{T13 --- Quality assurance}{understand}{medium}{A20}
+\rationale{Assert on resulting state, not on the path taken or the wording chosen --- both vary between
+runs even when the outcome is correct.}
+
+\end{questions}

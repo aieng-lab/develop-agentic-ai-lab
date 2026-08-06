@@ -1,0 +1,58 @@
+% Part B -- Self-assessment. IDENTICAL wording in the pre-test and the post-test.
+% Do not reword anything here without changing both waves: these are the repeated
+% measures whose pre/post difference we analyse.
+
+\partheading{B}{Your own assessment of your knowledge}
+
+\instruction{This part asks what you think you know. Answer as of \emph{today}.}
+
+\vspace{1em}
+\noindent
+\textbf{B1 \quad The learning objectives of this lab}
+\instruction{Judge your current knowledge}
+\begin{likert}[Today, I would say \dots]{\legendagree}
+  \litem{I know what the components of an agentic system are, how they work, and the role each one fulfils.}
+  \litem{I understand how these components interact with each other, and how those interactions extend what an agent can do.}
+  \litem{I understand how to ensure the quality of the individual components of an agentic system, and of the system as a whole.}
+  \litem{I understand which telemetry data is relevant for monitoring an agentic system.}
+  \litem{I could implement, monitor, and maintain an agentic system, including its source code, tests, and telemetry.}
+\end{likert}
+
+\vspace{1em}
+\noindent
+\textbf{B2 \quad Individual components}
+
+\instruction{For each component, give \emph{two} ratings: how well you could \textbf{explain} it to a
+fellow student, and how well you could \textbf{implement} it yourself in code without prior research.
+These are deliberately
+separate --- being able to explain something is not the same as being able to build it.}
+
+\vspace{0.4em}
+\begin{dualgrid}{I could explain it}{I could implement it}
+  \ditem{The role of the LLM in an agentic system}
+  \ditem{The agentic loop and its control flow}
+  \ditem{Context and context engineering}
+  \ditem{Tools and tool interfaces}
+  \ditem{The Model Context Protocol (MCP)}
+  \ditem{Skills}
+  \ditem{Long-term memory}
+  \ditem{Hooks}
+  \ditem{Permission management}
+  \ditem{Sandboxing}
+  \ditem{Sub-agents and agent-to-agent communication}
+  \ditem{Observability and telemetry for agents}
+  \ditem{Testing and quality assurance of agentic systems}
+\end{dualgrid}
+
+\newpage
+\vspace{1em}
+\noindent
+\textbf{B3 \quad Confidence in specific situations}
+\instruction{Consider what you would feel comfortable doing as part of professional work.}
+\begin{likert}[I am confident that I could \dots]{\legendagree}
+  \litem{design the architecture of an agent harness from scratch, given a set of requirements.}
+  \litem{work out why a particular agent run failed, given its logs and traces.}
+  \litem{decide what should be measured to operate an agentic system in production.}
+  \litem{judge whether someone else's agent harness is well built.}
+  \litem{explain to a non-expert why an agent needs a harness at all.}
+\end{likert}

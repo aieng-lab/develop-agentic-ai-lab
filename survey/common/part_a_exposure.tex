@@ -1,0 +1,96 @@
+% Part A' -- What the student actually did during the lab. Post-test only.
+% This is the "dose" measurement: it lets us interpret a knowledge gain against
+% how much of the harness the individual student personally built.
+
+\partheading{A}{What you did during the lab}
+
+\instruction{These questions describe how you spent the three weeks. They help us understand which parts
+of the lab produced learning. There are no good or bad answers here, and nothing you write influences
+your grade --- please answer honestly rather than favourably.}
+
+\vspace{1em}
+\noindent
+\textbf{A1 \quad On how many of the four working days (Mon--Thu) were you present in the lab?}
+\instruction{This refers to in-presence, where you have access to the teaching assistants.}
+
+\noindent
+{\setlength{\tabcolsep}{2pt}\renewcommand{\arraystretch}{1.3}%
+\begin{tabular}{@{}p{\dimexpr\linewidth-49mm\relax} ccccc@{}}
+  \toprule
+  & \hd{0} & \hd{1} & \hd{2} & \hd{3} & \hd{4} \\
+  \midrule
+  Week 1 & \ck & \ck & \ck & \ck & \ck \\
+  Week 2 & \ck & \ck & \ck & \ck & \ck \\
+  Week 3 & \ck & \ck & \ck & \ck & \ck \\
+  \bottomrule
+\end{tabular}}
+
+\vspace{1em}
+\noindent
+\textbf{A2 \quad Roughly how many hours per week did you work on the lab in total} 
+\instruction{This includes your full time spent, including work outside the lab room.}
+\bxl{$<$10} \quad \bxl{10--19} \quad \bxl{20--29} \quad \bxl{30--39} \quad \bxl{40 or more}
+
+
+\vspace{1em}
+\noindent
+\textbf{A3 \quad Which components of the harness did you built} 
+\instruction{For each component of your team's harness, tick the column that best describes your own
+involvement. ``Reviewed only'' means you read and understood a teammate's code without writing it.}
+
+\noindent
+{\setlength{\tabcolsep}{2pt}\renewcommand{\arraystretch}{1.25}\small
+\begin{tabular}{@{}p{\dimexpr\linewidth-78mm\relax} cccc@{}}
+  \toprule
+  \textbf{Component}
+    & \makebox[14mm]{\scriptsize I built it}
+    & \makebox[16mm]{\scriptsize co-built it}
+    & \makebox[18mm]{\scriptsize reviewed only}
+    & \makebox[22mm]{\scriptsize\shortstack{not involved /\\not built}} \\
+  \midrule
+  The agentic loop (prompt--reason--act control flow) & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  Context assembly and management & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  The tool registry and built-in tools & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  The terminal frontend (CLI) & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  Containerisation of the application & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  MCP client integration and tool discovery & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  Your team's own MCP server extension & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  Persistent long-term memory & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  Lifecycle hooks / instrumentation mechanism & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  Metrics, Prometheus endpoint, dashboard & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  Structured logs or traces of individual runs & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  Permission management (allow / deny / confirm) & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  Sub-agent integration and delegation & \makebox[14mm]{\bx} & \makebox[16mm]{\bx} & \makebox[18mm]{\bx} & \makebox[22mm]{\bx} \\
+  The automated test suite & \ck & \ck & \ck & \ck \\
+  \bottomrule
+\end{tabular}}
+
+\vspace{1em}
+\noindent
+\textbf{A4 \quad How heavily did you use AI assistance (LLMs, coding agents) for your own lab work?}
+\instruction{Judge your own use, not your teams.}
+\bxl{not at all} \quad \bxl{sometimes} \quad \bxl{about half of the work} \quad \bxl{often} \quad \bxl{for nearly everything}
+
+\vspace{1em}
+\noindent
+\textbf{A5 \quad Of the code you submitted, how much could you explain line by line if asked right now?}
+\instruction{Judge your own code understanding, not your teams.}
+\bxl{little of it} \quad \bxl{some of it} \quad \bxl{about half of it} \quad \bxl{most of it} \quad \bxl{all of it}
+
+
+\vspace{1em}
+\noindent
+\textbf{A6 \quad How much did you learn from each of the following?}
+\instruction{Attribute how much you learned to the different source of knowledge.}
+\begin{likert}[I learned a lot from \dots]{\legendagree}
+  \litem{writing the code myself}
+  \litem{debugging failures in our own harness}
+  \litem{reading my teammates' code and reviewing it}
+  \litem{the weekly task sheets}
+  \litem{discussions with the teaching assistants}
+  \litem{the other teams' presentations}
+  \litem{the architecture/loop diagrams we had to draw}
+  \litem{writing the daily reports}
+  \litem{background reading I did on my own}
+\end{likert}
+\newpage

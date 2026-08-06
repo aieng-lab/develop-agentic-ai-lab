@@ -1,0 +1,91 @@
+% Part A -- Demographics and prior experience. Pre-test only.
+
+\partheading{A}{Demographic Data}
+
+\instruction{These questions characterise the group as a whole and let us account for differences in
+starting points.}
+
+\noindent
+\textbf{A1 \quad Degree programme currently enrolled in:}\\
+\bxl{M.Sc.\ Computer Science} \quad \bxl{M.Sc.\ Artificial Intelligence Engineering}\\
+\bxl{Other: \writeline[10cm]}
+
+\vspace{1em}
+\noindent
+\textbf{A2 \quad Semester you are currently in:} \quad
+\bxl{1--2} \quad \bxl{3--4} \quad \bxl{5--6} \quad \bxl{7--8} \quad \bxl{9 or more}
+
+\vspace{1em}
+\noindent
+\textbf{A3 \quad Which of these courses have you already passed?} \textit{(tick all that apply)}\\
+\bxl{Foundations of AI Engineering} \\
+\bxl{Introduction to Deep Learning} \\
+\bxl{Deep Learning for Natural Language and Code} \\
+\bxl{Principles of AI Engineering} \\
+\bxl{Lab Courses on Machine Learning and Data Science} \\
+\bxl{Additional Lectures on Machine Learning and Data Science} \\
+
+\vspace{-0.5em}
+\noindent
+\bxl{Software Engineering} \\
+\bxl{Software Testing} \\
+\bxl{Lab Course of Software Engineering with AI} \\
+\bxl{Additional Lectures on Software Engineering} \\
+
+\vspace{-0.5em}
+\noindent
+\bxl{None of the above}
+
+\vspace{1em}
+\noindent
+\textbf{A4 \quad Professional software development experience} (internship, working student, employment ---
+excluding coursework!): \quad
+\bxl{none} \quad \bxl{$<$1 year} \quad \bxl{1--2 years} \quad \bxl{2--5 years} \quad \bxl{$>$5 years}
+
+\vspace{1em}
+\noindent
+\textbf{A5 \quad Technical Skills}
+\instruction{How would you rate your own ability with each of the following, as of today?}
+\begin{likert}[Skill]{\legendability}
+  \litem{Python (beyond scripting, including aspects like modules, packaging, typing)}
+  \litem{Git and collaborative version control}
+  \litem{Docker or Podman containers}
+  \litem{Automated testing with \texttt{pytest}}
+  \litem{Consuming and designing REST/HTTP APIs}
+  \litem{Asynchronous or concurrent programming}
+  \litem{Metrics and monitoring (e.g.\ Prometheus, Grafana)}
+  \litem{Reading and writing technical documentation in English}
+\end{likert}
+
+\vspace{1em}
+\noindent
+\textbf{A6 \quad Experience with LLMs and AI tools}
+\instruction{How would you rate your current exposure to LLMs and AIs?}
+\begin{freqgrid}{How often do you currently use \dots}
+  \fitem{a chat interface to an LLM (e.g.\ ChatGPT, Claude, Gemini)}
+  \fitem{an AI coding assistant inside your editor or IDE (e.g., GitHub CoPilot, Cursor)}
+  \fitem{an agentic coding tool that runs commands on its own (e.g., Claude Code, OpenAI Codex)}
+\end{freqgrid}
+
+
+\vspace{1em}
+\noindent
+\textbf{A7 \quad Experience with programming software with LLM components}
+\instruction{Have you experience with programming software that uses LLMs or other AI components?}
+\begin{expgrid}{Have you ever, yourself, \dots}
+  \eitem{called an LLM API directly from your own code?}
+  \eitem{written a prompt that defines a system role or tool schema?}
+  \eitem{built a retrieval-augmented generation (RAG) pipeline?}
+  \eitem{implemented a loop in which an LLM calls tools autonomously?}
+  \eitem{written or extended an MCP server?}
+  \eitem{instrumented an application with metrics or traces?}
+  \eitem{run untrusted or model-generated code inside a sandbox?}
+\end{expgrid}
+
+\vspace{1em}
+\noindent
+\textbf{A8 \quad Where does your current knowledge about LLMs and agents mainly come from?}
+\textit{(tick all that apply)}\\
+\bxl{university courses} \quad \bxl{self-study (docs, papers, blogs, videos)} \quad \bxl{work or internship}\\
+\bxl{hobby projects} \quad \bxl{conversations with peers} \quad \bxl{I have essentially no prior knowledge}
+\newpage

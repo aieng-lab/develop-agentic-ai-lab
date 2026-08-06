@@ -1,0 +1,246 @@
+% Shared preamble for all AI Engineering Lab pre/post survey documents.
+% Documents using this must declare \documentclass[addpoints,11pt]{exam} themselves,
+% and may set \printanswers before \input-ing this file.
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{lmodern}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{needspace}
+\usepackage[hidelinks]{hyperref}
+
+\usepackage[a4paper,margin=2.2cm,headsep=0.6cm,footskip=1.1cm]{geometry}
+
+% ---------------------------------------------------------------------------
+% Document metadata. Each driver file sets these before \input{common/preamble}.
+%   \surveywave  -> "Pre-Test" / "Post-Test"
+%   \surveyform  -> "A" / "B"
+% ---------------------------------------------------------------------------
+\providecommand{\surveywave}{Survey}
+\providecommand{\surveyform}{A}
+
+\newcommand{\labtitle}{AI Engineering Lab}
+
+% ---------------------------------------------------------------------------
+% Running head / foot
+% ---------------------------------------------------------------------------
+\pagestyle{headandfoot}
+\firstpageheader{}{}{}
+\runningheader{\small\labtitle}{}{\small\surveywave{} --- Form \surveyform}
+\runningheadrule
+\firstpagefooter{}{\small Page \thepage\ of \numpages}{}
+\runningfooter{}{\small Page \thepage\ of \numpages}{}
+
+% No per-item point values: every quiz item is scored 1/0 externally
+% (see docs/analysis_plan.md), so the printed form carries no point marks.
+\nopointsinmargin
+
+% ---------------------------------------------------------------------------
+% Section headings for the questionnaire parts
+% ---------------------------------------------------------------------------
+\newcommand{\partheading}[2]{%
+  \par\vspace{1.1em}%
+  \noindent\begin{tabularx}{\linewidth}{@{}>{\bfseries}l X@{}}
+    \large Part #1 & \large\bfseries #2
+  \end{tabularx}%
+  \par\vspace{-0.4em}\noindent\rule{\linewidth}{1pt}\par\vspace{0.5em}%
+}
+
+\newcommand{\blockheading}[1]{%
+  \par\vspace{0.8em}\noindent\textbf{#1}%
+  \par\vspace{-0.3em}\noindent\rule{\linewidth}{0.4pt}\par\vspace{0.3em}%
+}
+
+\newcommand{\instruction}[1]{\par\vspace{0.2em}\noindent\textit{\small #1}\par\vspace{0.5em}}
+
+% A block heading *inside* the questions environment. Plain \blockheading cannot
+% be used there: the questions environment is a list, and material placed in a
+% list before or between items has to be escaped through \fullwidth.
+\newcommand{\quizblock}[1]{\fullwidth{\blockheading{#1}}}
+
+% ---------------------------------------------------------------------------
+% Answer primitives
+% ---------------------------------------------------------------------------
+\newcommand{\bx}{$\square$}                        % empty checkbox
+\newcommand{\bxl}[1]{\bx~#1}                       % checkbox with label
+\newcommand{\writeline}[1][\linewidth]{\rule[-0.4em]{#1}{0.4pt}}
+
+% Single-character write-in boxes, e.g. for the pseudonym code.
+\newcommand{\charbox}{%
+  \tikz[baseline=(c.base)]{\node[draw,minimum width=8mm,minimum height=9mm,inner sep=0pt] (c) {\phantom{X}};}%
+}
+\newcommand{\charboxes}[1]{%
+  \foreach \i in {1,...,#1} {\charbox\hspace{1.2mm}}%
+}
+
+% ---------------------------------------------------------------------------
+% Rating grids
+% ---------------------------------------------------------------------------
+% These use plain `tabular` with an explicitly computed p{} label column rather
+% than `tabularx`. tabularx determines its body by scanning the input for a
+% literal \end{tabularx}, which it cannot find when the \begin/\end pair is
+% split across an environment definition -- so tabularx must not be wrapped in
+% a \newenvironment. The label width is therefore derived from \linewidth minus
+% the total width of the fixed check-box columns.
+
+\setlength{\extrarowheight}{0pt}
+\setlength{\emergencystretch}{2em}
+\newlength{\gridlabel}
+\newcommand{\ck}{\makebox[8mm]{$\square$}}          % one check-box column
+\newcommand{\hd}[1]{\makebox[8mm]{\scriptsize #1}}  % matching header cell
+
+% Forced-choice 1-5 rating scale. There is deliberately no "n/a" / "cannot judge"
+% column: every statement here is about the respondent's own knowledge or
+% experience, which they are always in a position to place on the scale. An
+% escape column on such a grid is used mainly to skip, and each skip removes a
+% repeated measure that cannot be recovered afterwards. A genuinely unanswerable
+% row can still be left blank, which is recorded as missing.
+%
+% The legend is a mandatory argument because the grids do not all use the same
+% scale: agreement and ability need different anchors, and a printed legend that
+% does not match the question is worse than none.
+% Usage: \begin{likert}[<column header>]{<legend>} \litem{stem} ... \end{likert}
+\newcommand{\legendagree}{1 = strongly disagree \quad 2 = disagree \quad 3 = neutral \quad 4 = agree
+  \quad 5 = strongly agree}
+\newcommand{\legendability}{1 = no experience \quad 2 = beginner \quad 3 = competent
+  \quad 4 = proficient \quad 5 = expert}
+\newenvironment{likert}[2][Today, I would say \dots]{%
+  \par\small
+  % The legend is emitted after the table, where the environment's arguments are
+  % no longer in scope, so it is stashed here.
+  \def\likertlegend{#2}%
+  \setlength{\tabcolsep}{2pt}%
+  \setlength{\gridlabel}{\dimexpr\linewidth-56mm\relax}%
+  \renewcommand{\arraystretch}{1.3}%
+  \noindent
+  \tabular{@{}p{\gridlabel} ccccc@{}}
+    \toprule
+    \textbf{#1} & \hd{1} & \hd{2} & \hd{3} & \hd{4} & \hd{5} \\
+    \midrule
+}{%
+    \bottomrule
+  \endtabular
+  \par\vspace{0.35em}%
+  {\scriptsize \likertlegend}%
+  \par
+}
+\newcommand{\litem}[1]{#1 & \ck & \ck & \ck & \ck & \ck \\}
+
+% Two-scale component grid: "can explain" and "can implement" side by side.
+\newenvironment{dualgrid}[2]{%
+  \par\small
+  \setlength{\tabcolsep}{1.6pt}%
+  \setlength{\gridlabel}{\dimexpr\linewidth-97mm\relax}%
+  \renewcommand{\arraystretch}{1.3}%
+  \noindent
+  \tabular{@{}p{\gridlabel} @{\hspace{2mm}} ccccc @{\hspace{4mm}} ccccc@{}}
+    \toprule
+    & \multicolumn{5}{c}{\textbf{#1}} & \multicolumn{5}{c}{\textbf{#2}} \\
+    \cmidrule(lr){2-6}\cmidrule(lr){7-11}
+    \textbf{Component} & \hd{1} & \hd{2} & \hd{3} & \hd{4} & \hd{5}
+                       & \hd{1} & \hd{2} & \hd{3} & \hd{4} & \hd{5} \\
+    \midrule
+}{%
+    \bottomrule
+  \endtabular
+  \par\vspace{0.35em}%
+  {\scriptsize 1 = not at all \quad 2 = a little \quad 3 = partly \quad 4 = mostly \quad 5 = fully}%
+  \par
+}
+\newcommand{\ditem}[1]{#1 & \ck & \ck & \ck & \ck & \ck & \ck & \ck & \ck & \ck & \ck \\}
+
+% Frequency grid: daily / weekly / monthly / tried once / never.
+\newenvironment{freqgrid}[1]{%
+  \par\small
+  \setlength{\tabcolsep}{2pt}%
+  \setlength{\gridlabel}{\dimexpr\linewidth-75mm\relax}%
+  \renewcommand{\arraystretch}{1.3}%
+  \noindent
+  \tabular{@{}p{\gridlabel} ccccc@{}}
+    \toprule
+    \textbf{#1} & \makebox[12mm]{\scriptsize daily} & \makebox[12mm]{\scriptsize weekly}
+                & \makebox[14mm]{\scriptsize monthly} & \makebox[16mm]{\scriptsize tried once}
+                & \makebox[12mm]{\scriptsize never} \\
+    \midrule
+}{%
+    \bottomrule
+  \endtabular\par
+}
+\newcommand{\fitem}[1]{#1 & \makebox[12mm]{\bx} & \makebox[12mm]{\bx} & \makebox[14mm]{\bx}
+                          & \makebox[16mm]{\bx} & \makebox[12mm]{\bx} \\}
+
+% Experience grid: yes / attempted / no.
+\newenvironment{expgrid}[1]{%
+  \par\small
+  \setlength{\tabcolsep}{2pt}%
+  \setlength{\gridlabel}{\dimexpr\linewidth-54mm\relax}%
+  \renewcommand{\arraystretch}{1.3}%
+  \noindent
+  \tabular{@{}p{\gridlabel} ccc@{}}
+    \toprule
+    \textbf{#1} & \makebox[12mm]{\scriptsize yes} & \makebox[22mm]{\scriptsize attempted}
+                & \makebox[12mm]{\scriptsize no} \\
+    \midrule
+}{%
+    \bottomrule
+  \endtabular\par
+}
+\newcommand{\eitem}[1]{#1 & \makebox[12mm]{\bx} & \makebox[22mm]{\bx} & \makebox[12mm]{\bx} \\}
+
+% ---------------------------------------------------------------------------
+% Quiz items
+% ---------------------------------------------------------------------------
+% The "don't know" escape hatch. Placed after the choices so that the item
+% itself remains a four-option single-best-answer item, while omission is
+% still distinguishable from guessing in the data.
+\newcommand{\dontknow}{%
+  \par\vspace{-0.2em}\noindent\hspace{1.2em}{\small\bx~\textit{I do not know.}}\par
+}
+
+% Metadata shown only in the answer key.
+\newcommand{\itemmeta}[4]{%
+  \ifprintanswers
+    \par\vspace{0.2em}\noindent{\footnotesize\textcolor{gray}{%
+      [topic: #1 \textbar{} level: #2 \textbar{} difficulty: #3 \textbar{} blueprint cell: #4]}}\par
+  \fi
+}
+
+% Rationale, key only.
+\newcommand{\rationale}[1]{\ifprintanswers\begin{solution}#1\end{solution}\fi}
+
+% Keep each quiz item together on one page. A stem separated from its options,
+% or options split across a page break, lets a student answer from a partial
+% view of the alternatives -- which silently changes the item.
+%
+% \question cannot be wrapped: exam.cls (re)defines it inside the questions
+% environment, so any outer redefinition is discarded. Items therefore call
+% \qitem, which resolves \question at expansion time -- i.e. inside the
+% environment, where it exists. \filbreak adapts to the item's actual height,
+% which \Needspace's fixed line count cannot.
+\newcommand{\qitem}{\filbreak\question}
+
+\renewcommand{\choiceshook}{%
+  \setlength\leftmargin{0.7em}%
+  \setlength\itemsep{0.15em}%
+  \setlength\topsep{0.3em}%
+}
+\renewcommand{\questionshook}{%
+  \setlength\itemsep{0.9em}%
+}
+
+% Lowercase (a)/(b)/(c)/(d) option labels, matching how the answer key and the
+% coding sheet refer to them.
+\renewcommand{\thechoice}{\alph{choice}}
+\renewcommand{\choicelabel}{(\thechoice)}
+
+\checkboxchar{$\square$}
+\checkedchar{$\blacksquare$}
+\CorrectChoiceEmphasis{\bfseries}
+\SolutionEmphasis{\small\itshape}

@@ -1,0 +1,318 @@
+% Retired quiz items -- NOT part of any document.
+%
+% This file is not \input by pre_form_*.tex, post_form_*.tex or key_form_*.tex,
+% and it is not compiled. It is an archive, kept so that the items below can be
+% reinstated in a later cohort without rewriting them. To reinstate a cell, move
+% the A item into part_c_form_a.tex and the B item into part_c_form_b.tex at the
+% same position, inside the \begin{questions} environment, and renumber both
+% files plus docs/blueprint.md and docs/coding_sheet.csv.
+%
+% ---------------------------------------------------------------------------
+% Why these items were retired
+% ---------------------------------------------------------------------------
+% On 2026-08-05 the quiz was cut from 28 to 20 items per form, because 28 items
+% did not fit the time available in the session. The eight cells below were
+% selected so that the surviving 20 keep the properties the instrument relies on:
+%
+%   - all 13 topics remain represented (T3 and T4, which had three items each,
+%     lose exactly one; six topics drop from two items to one),
+%   - key positions stay balanced at 5 items each at (a), (b), (c), (d) in both
+%     forms -- the retired set contains exactly two of each key letter per form,
+%   - the level and difficulty mix stays proportional: the retired set is
+%     2 remember / 3 understand / 3 apply-analyse and 2 easy / 3 medium / 3 hard,
+%   - three of the four items that docs/blueprint.md listed as needing a second
+%     opinion are among the retired ones (see the notes on A21, A24 and A28/B28
+%     below).
+%
+% Item-specific notes carried over from the "Known judgement calls" section of
+% docs/blueprint.md, which is why these three were preferred for retirement:
+%
+%   A21  The most memorisation-flavoured item in the set. Its ordering of
+%        isolation levels follows the lab handout; if the TAs teach a different
+%        ordering, it has to be rewritten rather than marked wrong.
+%   A24  Option (c) -- "deciding whether the request has been fulfilled" -- is
+%        not delegable, since it is the coordinating agent's own job, but a
+%        student who reads it as "a sub-agent could double-check this" has a
+%        defensible position.
+%   A28 / B28  Accept several enforcement mechanisms as a pass. Deliberate --
+%        the property under test is that the sentinel is never read -- but it
+%        makes the items harder than their distractors suggest.
+%
+% ---------------------------------------------------------------------------
+% Renumbering applied to the surviving items
+% ---------------------------------------------------------------------------
+% The 20 surviving items were renumbered 1-20 and their blueprint cell IDs were
+% reassigned to A01-A20 / B01-B20. The retired items below keep their ORIGINAL
+% cell IDs (A02/B02 ... A28/B28), which refer to the 28-item version of the
+% instrument. The mapping is:
+%
+%   old  01  02  03  04  05  06  07  08  09  10  11  12  13  14
+%   new  01   -  02  03   -  04  05  06   -  07  08  09  10   -
+%
+%   old  15  16  17  18  19  20  21  22  23  24  25  26  27  28
+%   new  11   -  12  13  14  15   -  16  17   -  18  19  20   -
+%
+% So a reference to A17 in the 28-item version is item A12 in the 20-item
+% version; a reference to A16 has no counterpart, because that cell is archived
+% here.
+
+
+% =====================================================================
+% Cell 02 -- T1 / understand / medium
+% =====================================================================
+
+% --- Form A, item A02 -------------------------------------------------
+\qitem A team's harness sends the whole conversation history with every LLM call. To save tokens, a
+student proposes sending only the newest user message instead. Why would the agent break?
+\begin{choices}
+  \choice Because the API rejects requests that fall below a minimum number of tokens.
+  \choice Because the earlier calls have already adjusted the model, and the history keeps it consistent.
+  \choice Because the sampling temperature becomes unstable when the prompt length varies between calls.
+  \CorrectChoice Because the model would no longer see the earlier tool results or its own reasoning, so it could not continue the task.
+\end{choices}
+\dontknow
+\itemmeta{T1 --- LLM role \& statelessness}{understand}{medium}{A02}
+\rationale{The history \emph{is} the agent's working state. (b) is the ``the model learns during the run''
+misconception.}
+
+% --- Form B, item B02 -------------------------------------------------
+\qitem Two calls are made to the same LLM endpoint five minutes apart, within one agent run. If the
+harness sends nothing but the new user message in the second call, what does the model still have from the
+first one?
+\begin{choices}
+  \CorrectChoice Nothing at all --- each call is independent, so whatever is not resent is gone.
+  \choice The tool schemas, because they were registered with the endpoint on first use.
+  \choice The system prompt, because it is cached on the server for the duration of the session.
+  \choice The last assistant message, because it is required to continue a conversation.
+\end{choices}
+\dontknow
+\itemmeta{T1 --- LLM role \& statelessness}{understand}{medium}{B02}
+\rationale{Same cell as A02: the harness, not the endpoint, owns the state.}
+
+
+% =====================================================================
+% Cell 05 -- T3 / remember / easy
+% =====================================================================
+
+% --- Form A, item A05 -------------------------------------------------
+\qitem The agentic loop is often described as a state machine. Between which two states does it
+alternate?
+\begin{choices}
+  \choice A training state, in which the model adapts, and an inference state, in which it answers.
+  \choice A planning state, in which the task is decomposed, and a reporting state, in which the user is informed.
+  \CorrectChoice A reasoning state, in which the LLM is called, and an acting state, in which a tool is called.
+  \choice A read state, in which context is loaded, and a write state, in which memory is persisted.
+\end{choices}
+\dontknow
+\itemmeta{T3 --- Loop and control flow}{remember}{easy}{A05}
+\rationale{Reason/act is the core alternation; the other pairs name real activities that are not the
+loop's two states.}
+
+% --- Form B, item B05 -------------------------------------------------
+\qitem In a ReAct-style loop, what triggers the transition from the reasoning state into the acting
+state?
+\begin{choices}
+  \choice The context has reached its configured token budget.
+  \CorrectChoice The LLM's output contains a tool call.
+  \choice The user confirms that the agent may continue.
+  \choice A fixed interval elapses between the two states.
+\end{choices}
+\dontknow
+\itemmeta{T3 --- Loop and control flow}{remember}{easy}{B05}
+\rationale{Same cell as A05: the model's output drives each transition. (c) confuses the loop with a
+permission gate.}
+
+
+% =====================================================================
+% Cell 09 -- T4 / understand / medium
+% =====================================================================
+
+% --- Form A, item A09 -------------------------------------------------
+\qitem Why is a large tool set with overlapping functionality a problem?
+\begin{choices}
+  \CorrectChoice It makes it harder for the agent to choose correctly, because the tools no longer define an unambiguous action space.
+  \choice It raises the risk that two tools execute simultaneously and corrupt each other's output.
+  \choice It prevents the harness from validating tool arguments against their schemas.
+  \choice It forces the loop to call every registered tool at least once per run.
+\end{choices}
+\dontknow
+\itemmeta{T4 --- Tools and tool design}{understand}{medium}{A09}
+\rationale{Targets the ``more tools means a more capable agent'' misconception.}
+
+% --- Form B, item B09 -------------------------------------------------
+\qitem Your harness exposes \texttt{read\_file}, \texttt{open\_file}, \texttt{cat\_file} and
+\texttt{get\_file\_contents}, all of which do the same thing. What is the most likely effect on the agent's
+behaviour?
+\begin{choices}
+  \choice It refuses to call any of them, because the registry cannot resolve the ambiguity.
+  \choice It calls them in sequence until one returns without an error.
+  \choice It merges them into a single tool call in order to save tokens.
+  \CorrectChoice It sometimes picks a less suitable one of the four, because nothing in the schemas distinguishes them.
+\end{choices}
+\dontknow
+\itemmeta{T4 --- Tools and tool design}{understand}{medium}{B09}
+\rationale{Same cell as A09, made concrete: an overlapping tool set degrades selection quality rather than
+producing a hard failure, which is what makes it easy to miss.}
+
+
+% =====================================================================
+% Cell 14 -- T6 / understand / medium
+% =====================================================================
+
+% --- Form A, item A14 -------------------------------------------------
+\qitem Skills and long-term memory are both loaded on demand rather than held in context permanently.
+What distinguishes the kind of information they carry?
+\begin{choices}
+  \choice A skill is written by a developer and memory is written by the model; otherwise they are the same.
+  \CorrectChoice A skill carries procedural know-how --- how to do something; long-term memory carries declarative facts --- what happened or what is the case.
+  \choice A skill lives inside the context window, whereas long-term memory lives outside it.
+  \choice A skill applies to a single run, whereas long-term memory is shared between all agents in the system.
+\end{choices}
+\dontknow
+\itemmeta{T6 --- Skills}{understand}{medium}{A14}
+\rationale{Procedural versus declarative is the distinction; (a) states a real difference but wrongly
+concludes the two are otherwise equivalent, and (c) contradicts the stem.}
+
+% --- Form B, item B14 -------------------------------------------------
+\qitem A team wants their agent to remember that the user prefers metric units, and separately to know
+the procedure for filling in a particular PDF form. Where does each belong?
+\begin{choices}
+  \choice Both in long-term memory, since both have to survive between runs.
+  \choice The preference in a skill, the procedure in long-term memory.
+  \CorrectChoice The preference in long-term memory, the procedure in a skill.
+  \choice Both in the system prompt, since both apply to every run.
+\end{choices}
+\dontknow
+\itemmeta{T6 --- Skills}{understand}{medium}{B14}
+\rationale{Same cell as A14, as an assignment task: a fact goes to memory, a procedure to a skill.
+(a) is tempting because persistence is common to both, which is exactly why it discriminates.}
+
+
+% =====================================================================
+% Cell 16 -- T7 / apply-analyse / hard
+% =====================================================================
+
+% --- Form A, item A16 -------------------------------------------------
+\qitem A team's long-term memory has grown to several thousand stored facts, and loading all of them is
+not an option. Which retrieval design matches how harnesses handle this?
+\begin{choices}
+  \CorrectChoice Put a few small, high-value items into the context up front, and keep lightweight identifiers such as file paths that let the agent load the rest when it needs them.
+  \choice Load a fixed-size random sample of the stored facts at the start of every run.
+  \choice Summarise the entire memory into one paragraph and include it in the system prompt.
+  \choice Let the model decide at the end of the run which facts it should have read.
+\end{choices}
+\dontknow
+\itemmeta{T7 --- Long-term memory}{apply-analyse}{hard}{A16}
+\rationale{The two complementary strategies are up-front loading of high-value items and just-in-time
+loading via identifiers.}
+
+% --- Form B, item B16 -------------------------------------------------
+\qitem Which decision has to be made at \emph{write} time by a long-term memory component and cannot be
+deferred to read time?
+\begin{choices}
+  \choice Which of the stored items are relevant to the current task.
+  \choice How much of the context budget the retrieved items may occupy.
+  \choice Whether the retrieved items should be summarised before they are used.
+  \CorrectChoice What is worth persisting at all, and at which point to persist it.
+\end{choices}
+\dontknow
+\itemmeta{T7 --- Long-term memory}{apply-analyse}{hard}{B16}
+\rationale{Same cell as A16, from the write side: everything not written is unrecoverable later, whereas
+all three distractors are genuinely read-time concerns.}
+
+
+% =====================================================================
+% Cell 21 -- T10 / remember / easy
+% =====================================================================
+
+% --- Form A, item A21 -------------------------------------------------
+\qitem Sandboxing can be realised at different levels of abstraction. Which sequence runs from the
+weakest to the strongest isolation?
+\begin{choices}
+  \choice Containers, then operating-system primitives, then a fully separated operating system, then microVM isolation.
+  \choice A fully separated operating system, then microVM isolation, then containers, then operating-system primitives.
+  \CorrectChoice Operating-system primitives, then containers, then microVM or WASM isolation, then a fully separated operating system.
+  \choice WASM isolation, then containers, then operating-system primitives, then microVM isolation.
+\end{choices}
+\dontknow
+\itemmeta{T10 --- Sandboxing}{remember}{easy}{A21}
+\rationale{The ordering reflects how much of the host is shared with the sandbox at each level.}
+
+% --- Form B, item B21 -------------------------------------------------
+\qitem What does sandboxing an agent primarily achieve?
+\begin{choices}
+  \choice It determines which of the agent's actions require the user's approval.
+  \CorrectChoice It restricts the agent's access to the host system, network and files to a bounded environment.
+  \choice It reduces the number of tokens the agent needs for a task.
+  \choice It guarantees that the agent's tool calls always return the same result.
+\end{choices}
+\dontknow
+\itemmeta{T10 --- Sandboxing}{remember}{easy}{B21}
+\rationale{Same cell as A21. (a) is the sandbox/permission conflation and (d) overstates what a stable
+environment buys --- it improves reproducibility, it does not make an agent deterministic.}
+
+
+% =====================================================================
+% Cell 24 -- T11 / apply-analyse / hard
+% =====================================================================
+
+% --- Form A, item A24 -------------------------------------------------
+\qitem Which task benefits most from being delegated to a sub-agent?
+\begin{choices}
+  \choice Appending a single line to a file whose path is already known.
+  \CorrectChoice Searching a large codebase for the places relevant to a change, where the search produces a lot of material but only a short list of findings is needed.
+  \choice Deciding whether the user's request has been fulfilled and the run may end.
+  \choice Incrementing a metrics counter after each tool call.
+\end{choices}
+\dontknow
+\itemmeta{T11 --- Sub-agents and A2A}{apply-analyse}{hard}{A24}
+\rationale{Delegation pays off when the ratio of intermediate material to useful result is high. (c) is
+the coordinating agent's own job and must not be delegated.}
+
+% --- Form B, item B24 -------------------------------------------------
+\qitem A team delegates every individual tool call to its own sub-agent. Why does this fail to deliver
+the benefit of delegation?
+\begin{choices}
+  \choice Sub-agents are not permitted to call tools, only to reason about them.
+  \choice The parent agent cannot receive results from more than one sub-agent per run.
+  \CorrectChoice Each delegation costs an extra context and an extra summary, while no substantial intermediate work is being kept out of the parent's context.
+  \choice Sub-agents share the parent's context window, so nothing is saved.
+\end{choices}
+\dontknow
+\itemmeta{T11 --- Sub-agents and A2A}{apply-analyse}{hard}{B24}
+\rationale{Same cell as A24 as a negative case: delegation is worth its overhead only when the discarded
+intermediate material is large relative to the returned result.}
+
+
+% =====================================================================
+% Cell 28 -- T13 / apply-analyse / hard
+% =====================================================================
+
+% --- Form A, item A28 -------------------------------------------------
+\qitem You are writing a test that checks your agent cannot read a file outside its sandbox root. You
+place a sentinel file outside the root and prompt the agent to read it. Which outcome should the test
+accept as a pass?
+\begin{choices}
+  \choice Only the case in which the tool registry rejects the call; a refusal by the model is not sufficient.
+  \choice Any outcome in which the agent does not crash, since isolation is enforced by the container.
+  \choice Only the case in which the agent reads the file and then reports that it should not have been able to.
+  \CorrectChoice Either the registry rejects the call or the agent refuses and no read happens --- as long as the sentinel's contents are never returned.
+\end{choices}
+\dontknow
+\itemmeta{T13 --- Quality assurance}{apply-analyse}{hard}{A28}
+\rationale{The property under test is that the sentinel is never read. Several acceptable mechanisms
+satisfy it, so the assertion is written over the outcome rather than over one implementation.}
+
+% --- Form B, item B28 -------------------------------------------------
+\qitem A test suite already checks that the agent refuses to read \texttt{../outside\_target.txt}. Which
+additional prompt variant adds the most value?
+\begin{choices}
+  \CorrectChoice ``Navigate to \texttt{/} and list its contents'' --- it probes a different code path with the same intent.
+  \choice ``Please read \texttt{../outside\_target.txt}'' --- a politer phrasing of the same request.
+  \choice ``Read \texttt{../outside\_target.txt} and tell me how many lines it has'' --- the same path with an extra step.
+  \choice ``Read \texttt{../outside\_target.txt} twice'' --- it verifies that the refusal is stable.
+\end{choices}
+\dontknow
+\itemmeta{T13 --- Quality assurance}{apply-analyse}{hard}{B28}
+\rationale{Same cell as A28: coverage of a security boundary comes from exercising distinct enforcement
+paths --- relative traversal, absolute paths, directory navigation --- not from rewording one request.}

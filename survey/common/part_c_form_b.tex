@@ -1,0 +1,303 @@
+% Part C -- Knowledge quiz, FORM B (20 items).
+%
+% Item Bnn occupies the same blueprint cell as item Ann in part_c_form_a.tex:
+% same topic, same Bloom level, same target difficulty, same targeted
+% misconception -- different scenario, no shared stem wording.
+% See docs/blueprint.md for the full mapping.
+%
+% Key positions are balanced: 5 items each with the key at (a), (b), (c), (d).
+%
+% The quiz was cut from 28 to 20 items on 2026-08-05. The eight retired A/B
+% pairs are archived verbatim in common/deprecated_items.tex, which also records
+% the old-to-new numbering.
+
+\partheading{C}{Knowledge questions}
+
+\instruction{20 questions, each with exactly one best answer. Tick one box per question. If you do not
+know, please tick ``I do not know'' rather than guessing --- an honest blank is more useful to us than a
+lucky guess, and none of this affects your grade. Plan for about 15 minutes.}
+
+\begin{questions}
+
+% ===== The model and its context =====================================
+
+% --- Item 1: T1 / remember / easy -------------------------------------
+\qitem Which statement about the LLM inside an agentic system is correct?
+\begin{choices}
+  \choice It accumulates knowledge about the current task across the calls of one run.
+  \choice It keeps the tool results it has already seen, so they need to be sent only once.
+  \CorrectChoice It has no memory of previous calls, so the harness has to resend everything it needs.
+  \choice It remembers the system prompt after the first call and does not require it again.
+\end{choices}
+\dontknow
+\itemmeta{T1 --- LLM role \& statelessness}{remember}{easy}{B01}
+\rationale{All three distractors are forms of the same error --- assuming server-side state --- and each is
+a bug students actually write when assembling requests.}
+
+% --- Item 2: T2 / understand / medium ---------------------------------
+\qitem A team observes that their agent follows instructions reliably in short runs but starts ignoring
+them in long ones, although the context window is never exceeded. What is the most plausible explanation?
+\begin{choices}
+  \choice The system prompt is silently truncated once the conversation passes a certain number of messages.
+  \choice Instructions expire after a fixed number of turns and have to be repeated.
+  \choice The model switches to a smaller variant automatically to keep response times constant.
+  \CorrectChoice The model's effective attention to any single instruction falls as the window fills up with lower-signal material.
+\end{choices}
+\dontknow
+\itemmeta{T2 --- Context engineering}{understand}{medium}{B02}
+\rationale{Same cell as A02: degradation begins well before the hard limit. The distractors invent
+mechanisms that would produce an abrupt rather than a gradual failure.}
+
+% --- Item 3: T2 / apply-analyse / hard --------------------------------
+\qitem Your harness summarises the oldest third of the conversation whenever the context exceeds a
+threshold. What are you accepting in exchange?
+\begin{choices}
+  \choice The agent can no longer call any tool that was used in the summarised part of the run.
+  \CorrectChoice Detail from the summarised turns is no longer available in full, so some fidelity is traded for sustained coherence and lower cost.
+  \choice The summary has to be produced by a different model from the one running the loop.
+  \choice The loop's termination conditions stop applying, because the iteration count is reset.
+\end{choices}
+\dontknow
+\itemmeta{T2 --- Context engineering}{apply-analyse}{hard}{B03}
+\rationale{Same cell as A03, approached from the cost side rather than the choice side: compaction is a
+deliberate loss of fidelity, and knowing what you gave up is the point.}
+
+% ===== The loop, tools, MCP and skills ===============================
+
+% --- Item 4: T3 / understand / medium ---------------------------------
+\qitem Your agent occasionally gets stuck calling the same failing tool over and over until you kill the
+process. Which property of the loop is missing?
+\begin{choices}
+  \choice A retry policy that repeats each failing tool call until it succeeds.
+  \choice A larger context window, so that the repeated observations still fit.
+  \choice A sandbox, so that repeated tool calls cannot damage the host system.
+  \CorrectChoice A bound on execution --- for example a maximum number of iterations --- that forces the machine into a terminal state.
+\end{choices}
+\dontknow
+\itemmeta{T3 --- Loop and control flow}{understand}{medium}{B04}
+\rationale{Same cell as A04. (a) is the opposite of what is needed and (c) attributes termination to the
+sandbox.}
+
+% --- Item 5: T3 / apply-analyse / hard --------------------------------
+\qitem Some harnesses build planning instructions into the system prompt rather than waiting for a user
+to ask for a plan. What follows directly from that design?
+\begin{choices}
+  \CorrectChoice Every run spends its first reasoning effort on producing a plan, whether or not the task needs one.
+  \choice The user can no longer influence how the agent approaches the task.
+  \choice The agent's tool calls are validated against the plan by the tool registry.
+  \choice The plan replaces the conversation history as the agent's context.
+\end{choices}
+\dontknow
+\itemmeta{T3 --- Loop and control flow}{apply-analyse}{hard}{B05}
+\rationale{Same cell as A05: up-front planning is a trade, not a free improvement --- it costs the first
+turn of every run, including trivial ones.}
+
+% --- Item 6: T4 / remember / easy -------------------------------------
+\qitem Which of these would be implemented as a tool rather than as some other component of the harness?
+\begin{choices}
+  \choice A bundle of instructions that teaches the agent how to fill in a particular PDF form.
+  \choice A callback that runs before every action to check whether it is permitted.
+  \CorrectChoice A function that lists the files in a directory and returns the listing to the model.
+  \choice A policy that decides whether an action requires the user's confirmation.
+\end{choices}
+\dontknow
+\itemmeta{T4 --- Tools and tool design}{remember}{easy}{B06}
+\rationale{Same cell as A06, asked as a classification instead of a definition: (a) is a skill, (b) a hook,
+(d) permission management.}
+
+% --- Item 7: T4 / apply-analyse / hard --------------------------------
+\qitem Your harness catches every exception raised inside a tool and returns the literal string
+\texttt{error} to the model. Which consequence follows most directly?
+\begin{choices}
+  \choice The harness can no longer log the original exception, because it has been replaced.
+  \CorrectChoice The model has nothing to work with in order to choose a corrective action, so it cannot recover from failures it could otherwise handle.
+  \choice The tool's schema becomes invalid, because its declared return type is not met.
+  \choice The agent treats every failure as a final answer and ends the run.
+\end{choices}
+\dontknow
+\itemmeta{T4 --- Tools and tool design}{apply-analyse}{hard}{B07}
+\rationale{Same cell as A07 with the ambiguity introduced deliberately rather than accidentally: errors
+must reach the model in a form it can act on. Logging (a) is unaffected.}
+
+% --- Item 8: T5 / remember / easy -------------------------------------
+\qitem In the architecture of a harness, what role does an MCP server play?
+\begin{choices}
+  \choice It hosts the language model that the agent sends its requests to.
+  \choice It stores the agent's conversation history so that it survives a restart.
+  \CorrectChoice It provides tools that the agent can discover and call over a standardised interface.
+  \choice It enforces which of the agent's actions require the user's approval.
+\end{choices}
+\dontknow
+\itemmeta{T5 --- MCP}{remember}{easy}{B08}
+\rationale{Same cell as A08: (a) is the ``MCP serves the model'' confusion, (b) long-term memory,
+(d) permission management.}
+
+% --- Item 9: T5 / apply-analyse / medium ------------------------------
+\qitem A team adds a new tool to their MCP server. Their agent picks it up on the next run with no code
+change and no configuration change. Which property of their integration does that demonstrate?
+\begin{choices}
+  \CorrectChoice Tools are discovered at runtime, so the agent's action space follows the server's.
+  \choice The tool schemas are compiled into the harness at build time.
+  \choice The model was fine-tuned on the server's tool catalogue.
+  \choice The tool registry caches every tool it has ever seen and replays it.
+\end{choices}
+\dontknow
+\itemmeta{T5 --- MCP}{apply-analyse}{medium}{B09}
+\rationale{Same cell as A09, reasoning from an observation back to the mechanism. (b) would produce the
+opposite behaviour.}
+
+% --- Item 10: T6 / understand / medium --------------------------------
+\qitem A harness holds a library of 60 skills, but a given run typically loads two or three of them.
+What mechanism makes that possible?
+\begin{choices}
+  \CorrectChoice The skills are disclosed just in time: only an identifier and a short description are visible until one is actually needed.
+  \choice The skills are compressed and transparently decompressed by the context manager.
+  \choice The agent requests skills from the model provider's servers rather than from the harness.
+  \choice The unused skills are held in long-term memory and summarised into the context.
+\end{choices}
+\dontknow
+\itemmeta{T6 --- Skills}{understand}{medium}{B10}
+\rationale{Same cell as A10: the mechanism is selective disclosure, not compression --- (b) is the common
+wrong intuition that the problem is size rather than signal.}
+
+% ===== Memory, hooks, permissions, sandboxing and sub-agents =========
+
+% --- Item 11: T7 / remember / easy ------------------------------------
+\qitem Which requirement can be met \emph{only} by a long-term memory component, and not by context
+management alone?
+\begin{choices}
+  \choice Older turns of the current conversation are summarised in order to save tokens.
+  \CorrectChoice Information stored during one session is still available after the application has been restarted.
+  \choice The tool schemas stay visible to the model throughout the run.
+  \choice The agent's reasoning from the previous iteration informs the next one.
+\end{choices}
+\dontknow
+\itemmeta{T7 --- Long-term memory}{remember}{easy}{B11}
+\rationale{Same cell as A11: persistence beyond the process is the defining property. (a), (c) and (d) are
+all achievable within a single run's context.}
+
+% --- Item 12: T8 / remember / easy ------------------------------------
+\qitem At which points would a hook typically be triggered?
+\begin{choices}
+  \choice Only once, when the agent process starts up.
+  \choice Whenever the user types a new message, and at no other time.
+  \choice Whenever the context window is about to overflow, and at no other time.
+  \CorrectChoice Before a tool call and after an LLM response.
+\end{choices}
+\dontknow
+\itemmeta{T8 --- Hooks}{remember}{easy}{B12}
+\rationale{Same cell as A12: hooks sit at the transitions of the loop, which is what makes them the natural
+place for enforcement and instrumentation.}
+
+% --- Item 13: T8 / apply-analyse / medium -----------------------------
+\qitem Your team has to record a metric for every tool call, every model call and every permission
+decision, without scattering counter increments throughout the codebase. Which mechanism gives you that?
+\begin{choices}
+  \choice A tool that the agent calls whenever it wants something to be counted.
+  \choice A wrapper around the metrics endpoint that infers the events from HTTP traffic.
+  \CorrectChoice Lifecycle hooks at those points, with the instrumentation attached to the hooks.
+  \choice A sub-agent whose task is to watch the main agent and report what it did.
+\end{choices}
+\dontknow
+\itemmeta{T8 --- Hooks}{apply-analyse}{medium}{B13}
+\rationale{Same cell as A13, using the observability side of the same seam. (a) makes measurement depend on
+the model choosing to measure.}
+
+% --- Item 14: T9 / understand / easy ----------------------------------
+\qitem In a model with a read-only tier, a sandbox-edit tier and a full-access tier, which action is
+characteristic of the sandbox-edit tier?
+\begin{choices}
+  \CorrectChoice Writing a file inside the container's workspace.
+  \choice Sending an email on the user's behalf.
+  \choice Searching the repository for a string.
+  \choice Deleting a branch on the remote repository.
+\end{choices}
+\dontknow
+\itemmeta{T9 --- Permission management}{understand}{easy}{B14}
+\rationale{Same cell as A14, classifying into the middle tier instead of the top one: (c) is read-only,
+while (b) and (d) reach outside the sandbox.}
+
+% --- Item 15: T9 / understand / medium --------------------------------
+\qitem Your permission system is configured so that every single tool call requires the user's
+confirmation. Which criticism of that configuration is valid?
+\begin{choices}
+  \choice It makes the permission decisions impossible to record in the observability data.
+  \CorrectChoice It gives up the benefit of the tiers: routine, low-risk observation interrupts the user as often as genuinely consequential action.
+  \choice It means the sandbox is no longer needed, since the user approves everything.
+  \choice It prevents the agent from using tools discovered from an MCP server.
+\end{choices}
+\dontknow
+\itemmeta{T9 --- Permission management}{understand}{medium}{B15}
+\rationale{Same cell as A15 approached from over-restriction: tiers exist to spend human attention where
+it changes the outcome. Confirmation fatigue makes approvals reflexive and defeats the gate.}
+
+% --- Item 16: T10 / understand / medium -------------------------------
+\qitem A team argues that because their agent runs inside a container, they do not need permission
+management. Why is that argument wrong?
+\begin{choices}
+  \CorrectChoice A sandbox bounds what the agent \emph{can} reach; permission management decides which of the reachable actions it \emph{may} take, including ones whose effects leave the sandbox.
+  \choice Containers isolate only the network and not the file system, so file access still needs a policy.
+  \choice Permission management is what starts and stops the container, so it cannot be removed.
+  \choice A container's isolation expires after a fixed time, after which a policy has to take over.
+\end{choices}
+\dontknow
+\itemmeta{T10 --- Sandboxing}{understand}{medium}{B16}
+\rationale{Same cell as A16: \emph{can} versus \emph{may}. A containerised agent with a network connection
+and an API token can still act irreversibly on the outside world.}
+
+% --- Item 17: T11 / understand / medium -------------------------------
+\qitem Why does giving a sub-agent its own context window help the system scale?
+\begin{choices}
+  \choice The two agents can call the LLM simultaneously, halving the run's latency.
+  \choice The sub-agent's context does not count towards the provider's token limits.
+  \choice The main agent can then run on a smaller model, since the reasoning happens in the sub-agent.
+  \CorrectChoice The coordinating agent's context stays focused, because only the summary of the sub-agent's work is added to it.
+\end{choices}
+\dontknow
+\itemmeta{T11 --- Sub-agents and A2A}{understand}{medium}{B17}
+\rationale{Same cell as A17: the benefit is context economy, not parallelism (a) or a billing loophole (b).}
+
+% ===== Observability and quality assurance ===========================
+
+% --- Item 18: T12 / understand / easy ---------------------------------
+\qitem A dashboard for an agent harness shows only the number of completed runs per hour. What is the
+most important thing it is missing?
+\begin{choices}
+  \choice The version number of the harness that produced them.
+  \choice The number of lines of Python in the tool registry.
+  \CorrectChoice Whether those runs succeeded or failed.
+  \choice The physical location of the server that ran them.
+\end{choices}
+\dontknow
+\itemmeta{T12 --- Observability and telemetry}{understand}{easy}{B18}
+\rationale{Same cell as A18: throughput without an outcome dimension cannot distinguish a healthy system
+from one that is failing fast and often.}
+
+% --- Item 19: T12 / apply-analyse / medium ----------------------------
+\qitem Why is it not enough to expose only aggregate metrics for an agentic system?
+\begin{choices}
+  \choice Aggregate metrics cannot be scraped by a Prometheus-compatible server.
+  \choice Aggregate metrics are only valid if the agent is deterministic, which it is not.
+  \choice Aggregate metrics are computed by the model itself and are therefore unreliable.
+  \CorrectChoice They show that something is wrong but not why; reconstructing what happened in one run requires per-run traces or structured logs.
+\end{choices}
+\dontknow
+\itemmeta{T12 --- Observability and telemetry}{apply-analyse}{medium}{B19}
+\rationale{Same cell as A19, stated as a principle rather than an incident. This is why the lab asks for
+both a dashboard and inspectable per-run records.}
+
+% --- Item 20: T13 / understand / medium -------------------------------
+\qitem Why should the assertions of an end-to-end test for an agent target the resulting state rather
+than the agent's wording?
+\begin{choices}
+  \choice Because the agent's messages are not available to the test harness.
+  \CorrectChoice Because the same correct outcome can be reached with different phrasings and different sequences of calls.
+  \choice Because state assertions are the only kind a test framework is able to express.
+  \choice Because the wording of the agent's messages is fixed by the model provider.
+\end{choices}
+\dontknow
+\itemmeta{T13 --- Quality assurance}{understand}{medium}{B20}
+\rationale{Same cell as A20 as a principle: asserting on wording produces flaky tests, because the model's
+phrasing varies while the outcome does not.}
+
+\end{questions}

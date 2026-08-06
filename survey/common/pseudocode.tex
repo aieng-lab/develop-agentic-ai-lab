@@ -1,0 +1,36 @@
+% Self-generated pseudonym code: lets us pair a pre-test with a post-test
+% without ever learning who filled it in.
+%
+% Wrapped in a minipage so the rules, the boxes and the worked example can never
+% be split across a page break -- on a paper form a half-visible rule produces
+% codes that do not match between the two waves.
+
+% \vspace{0.4em}
+% \noindent
+% \begin{minipage}{\linewidth}
+\blockheading{Your personal code}
+
+\instruction{We need to match your pre-test to your post-test, but we do not want to know who you are.
+Build your code from the four rules below: they give the same result on both occasions, and we cannot
+reverse them. One character per box, in CAPITAL letters.}
+
+\noindent
+\begin{tabular}{@{}r@{\hspace{1em}}l@{}}
+  \textbf{Box 1} & First letter of your \textbf{mother's} first name \\
+  \textbf{Box 2} & First letter of your \textbf{father's} first name \\
+  \textbf{Boxes 3--4} & \textbf{Day} of your own birthday, two digits (e.g.\ the 7th $\rightarrow$ \texttt{07}) \\
+  \textbf{Box 5} & Last digit of the \textbf{house number} you grew up in \\
+\end{tabular}
+
+\vspace{0.9em}
+\noindent
+\textbf{Your code:}\hspace{1em}\charboxes{5}
+
+\vspace{0.6em}
+\noindent
+\instruction{Example: mother Anna, father Bernd, born on the 23rd, house number 14
+$\rightarrow$ \texttt{AB234}}
+
+%\instruction{If a rule does not apply to you, put an \texttt{X} in that box and use the same \texttt{X}
+%again next time.}
+%\end{minipage}
