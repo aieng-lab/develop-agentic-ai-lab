@@ -1,0 +1,510 @@
+\documentclass{article}
+
+\usepackage[top=2.5cm,left=2.5cm, right=2.5cm, bottom=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{tcolorbox}
+\usepackage{dirtree}
+
+\title{AI Engineering Lab}
+\author{Chair of AI Engineering}
+\date{SoSe 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Overview}
+
+In this lab, you build an agentic system that performs a set of defined tasks. First, you review the state of the art of agent harnesses: what their design principles are, how they orchestrate several components, and how they can be equipped with monitoring/observability to track their internal workings and detect root causes of failures. Then, you implement a first version of a harness that, together with the provided LLM, users can interact with via terminal to solve tasks that require navigating a local file system. Subsequently, you extend the harness to support long-term memory, skills, and access to new types of tools. Finally, you fortify the harness with prevention of sensitive or consequential operations, hooks for monitoring/observability, and support for specialized subagents.
+
+\vspace{5px}
+
+\noindent The learning objectives are:
+
+\begin{itemize}
+    \item Know what the components of an agentic system are, how they work, and the role they play.
+    \item Understand how these components interact with each other and how these interactions extend the capabilities of an agentic system.
+    \item Understand how to ensure the quality of the individual components in an agentic system as well as for the overall system. 
+    \item Be able to implement an agent harness, including its source code and tests.
+    \item Extend the agent harness with telemetry data via hooks for monitoring/observability purposes. 
+\end{itemize}
+
+\noindent \textbf{Important:} The goal of this lab is not to implement a high-quality agent harness with many features. This is important but secondary. The  goal is, rather, to gain an in-depth understanding of these systems through a guided implementation as a teaching method.
+
+% First week: LLM + react loop + context + tools (file system)
+% Second week: Loop extension (up-front planning) + skills + long-term memory + more tools (search/API/MCP server)
+% Third week: hooks (monitoring/observability) + permissions management + subagents
+
+\section{Background}
+\label{sec:background}
+
+Large Language Models (LLMs) and AI agents are revolutionizing an ever-increasing number of industries. In their basic form, LLMs are conversational interfaces with no access to external information other than that provided by a user during a conversation. In contrast, agents are LLMs running in a loop, autonomously using tools that enable interaction with an environment such as searching the internet, navigating a file system, or querying an API. These tools are necessary to perform tasks that an LLM could not accomplish on its own, such as booking a flight, solving a GitHub issue, or scheduling a meeting. There are different approaches to building such a loop, but one of the most popular is \textit{ReAct}~\cite{react}: given a task prompted by a user, the LLM iteratively reasons about the next action toward solving it and decides whether that action requires one of the available tools. If a tool is called, its output is appended to the context and serves as evidence of the task progress on the following LLM call; if no further action is needed or possible, the LLM responds to the user, ending the loop (see Figure~\ref{fig:react}).
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.65\linewidth]{figs/ReAct.png}
+    \caption{The \textit{ReAct} approach.}
+    \label{fig:react}
+\end{figure}
+
+\vspace{5px}
+
+\noindent Agents vary widely in the kind of tasks they can perform, the environment in which they act, and the safety and security implications of their actions, among other aspects. Handling this variation reliably motivates a dedicated infrastructure layer, now typically known as a harness, which orchestrates different components to turn a stateless LLM into a functional, extensible, and reliable agent. In these terms, an agentic system can be understood as the composition of an LLM and a harness, and its components are summarized as follows:
+
+\begin{itemize}
+    \item \textbf{LLM:} The core reasoning and generation engine, stateless across calls, that decomposes tasks, selects the next action, interprets user feedback and tool outputs, and decides when to revise or respond to the user. A sufficient level of instruction-following capability is expected to reliably comply with user guidance and system rules; beyond that threshold, the widest optimization window lies not in the LLM itself but in how the surrounding harness curates its context.
+    
+    \item \textbf{Loop:} The control structure that drives the agent, expressed as a state machine that alternates between a reasoning state (an LLM call) and an acting state (a tool call). The LLM output decides each transition: a tool call moves the machine to the acting state, whose observation is appended to the context before returning to reasoning, while a final answer moves it to a terminal state that ends the run. Guard conditions such as iteration caps, token or time budgets, and error handling bound the machine so it always terminates, preventing runaway execution when the LLM neither returns a final answer nor a valid action.
+    
+    \textit{Up-front planning:} A typical loop such as \textit{ReAct} can be extended by instructing the agent to plan the task up front, then the loop needs to contrast task progress against this initial plan. Although a user can explicitly ask for it, some harness implementations include equivalent instructions into the system prompt, thus any agent run invests its first reasoning effort on creating this plan. 
+      
+    \item \textbf{Context:} The short-term memory, updated after every loop step, that includes system instructions, conversation history, tool schemas, and outputs. Because LLM performance degrades as the window fills (an effect known as context rot), effective context engineering seeks the smallest set of high-signal tokens that still yields the desired behavior. As runs grow long, the harness manages this budget through techniques such as compaction (summarizing older turns) and offloading state to external memory, trading some fidelity for sustained coherence and lower cost~\cite{context-engineering}.
+    
+    \item \textbf{Tools:} Mechanisms that enable agents to search the internet, navigate a file system, query an API, or run CLI commands. Tools expose deterministic, schema-defined interfaces, even when their outputs are environment-dependent; and although they are prone to failures, these must be communicated upstream effectively. Because tools define the contract between the agent and its action space, they should be token-efficient and unambiguous: a bloated set with overlapping functions makes it as hard for the agent to choose correctly. MCP~\cite{mcp} has been popularized as a standard for the definition of tools.
+    
+    \item \textbf{Skills:} Modular, loadable bundles of instructions (optionally scripts, references, or examples) that package reusable know-how for a class of tasks, such as filling a PDF form or querying a specific API. Rather than holding every skill in context at all times, the harness discloses it only when the task calls for it using a just-in-time mechanism. Because skills are portable text, they can be shared, versioned, and composed across agents, and a well-stocked skill library can sometimes stand in for explicit multi-agent coordination.
+    
+    \item \textbf{Long-term memory:} Persistent information retained across runs, such as user preferences, learned facts, or summaries of previous conversations. It lives outside the context and is consulted on demand. At writing time, the harness must decide what is worth persisting and when. At reading time, retrieval combines complementary strategies: dropping small, high-value files into the context up front, and keeping lightweight identifiers, such as file paths, that let the agent load information just-in-time. This just-in-time mechanism is similar to the one used for skills but carrying declarative facts (what happened) rather than procedural knowledge (how to do something).
+
+    \item \textbf{Hooks:} Custom functions triggered at specific points in the agent lifecycle, such as before a tool call or after an LLM response. Pre-use hooks can validate arguments, enforce permission policies, or block risky commands, while post-use hooks can sanitize outputs, compact logs, update memory, or trigger follow-up verification. By making these control points explicit, hooks turn a raw, LLM-selected action into a monitored transition in the loop and provide the natural insertion point for logging and observability.
+    
+    \item \textbf{Permission management:} The policies and controls that determine the actions and resources an agent may access, often requiring user approval for sensitive or consequential operations. Some harnesses follow a multi-tier model separating low-risk observation from high-risk action: a read-only tier for browsing and inspection, a sandbox-edit tier for local changes and test runs, and a full-access tier for irreversible or outward-facing operations. Actions in the last tier are typically guarded by mandatory human-in-the-loop gates, since their consequences can extend beyond the sandbox.
+
+     \item \textbf{Sandboxing:} Isolation of agent-executed code and tools within a restricted environment to limit access to the host system, network, files, and other sensitive resources. This can be realized at different levels of abstraction, from operating system primitives to containers or microVM/WASM isolation, up to a fully separated operating system~\cite{sandbox-envs}. Beyond containment, a stable sandbox improves reproducibility, since an agent can replay the same command, seed, or dependency set under comparable conditions, ensuring a failure reflects a genuine defect rather than environment drift.
+    
+    \item \textbf{Agent-to-agent communication:} The protocols and mechanisms through which agents exchange tasks, context, intermediate results, and status information to coordinate their work. \textbf{Specialized subagents} are typical cases of agent-to-agent communication: a main agent delegates a subtask to a specialized one, providing only the relevant information and a schema of the expected result. Because the subagent works in its own clean context window and returns only a condensed summary, detailed intermediate work stays isolated from the main agent, keeping the coordinating context focused as the system scales.
+\end{itemize}
+
+\noindent Most of these components are domain-agnostic: they are defined independently of what an agent running on a harness produces, whether natural language text, code, or images. What mainly specializes a harness to a domain are the concrete tools and skills plugged into it, along with the sensors used to verify outputs. Running a test suite for code, checking layout and consistency properties for a slide deck, or reconciling figures for a report are all instances of the same generate-then-verify pattern.
+
+\vspace{5px}
+
+\noindent Recent harness developments have been framed in several complementary ways. One perspective centers code as the execution medium, where reasoning, acting, and environment state become executable, inspectable, and verifiable artifacts~\cite{code-harness}; this view is prominent partly because code is the domain where verification is cheapest and most deterministic (a test passes or fails), whereas other domains often fall back to LLM- or human-judged criteria. A second decomposes the harness into functional modules, such as perception, memory, and reasoning, and studies the contribution of each module empirically, finding that different modules dominate for different types of tasks~\cite{modular-harness}. A third draws a boundary between the LLM and the infrastructure around it, and treats that infrastructure, rather than the LLM, as the primary lever for agent performance and the first place to look when an agent fails~\cite{anatomy-harness}. Across these perspectives, a recurring challenge is that harnesses remain difficult to monitor, compare, transfer, and ablate as objects in their own right~\cite{nl-harness}.
+
+\section{Deadlines Overview}
+
+\begin{itemize}
+    \item Registration: Tuesday morning, September 1nd
+    \item Individual daily reports: Monday - Thursday
+    \begin{itemize}
+        \item Submissions to the GitLab repository assigned to the group by the end of the day (see Section~\ref{sec:daily_report}).
+    \end{itemize}
+    \item Group presentations: Friday, September 4th and 11th
+    \begin{itemize}
+        \item Slide submission \textbf{as PDF} before 9am on Friday via email to \url{lukas.schulte@uni-passau.de}, further updates are not allowed.
+    \end{itemize}
+    \item Individual presentations: Friday, September 18th
+    \begin{itemize}
+        \item Slide submission \textbf{as PDF} before 9am on Friday via email to \url{lukas.schulte@uni-passau.de}, further updates are not allowed.
+        \item Time slots will be assigned in advance.
+    \end{itemize}
+    \item Individual written reports: Sunday, September 27th
+    \begin{itemize}
+        \item Slide submission \textbf{as PDF} before midnight via email to \url{lukas.schulte@uni-passau.de}.
+    \end{itemize}
+    \item Individual oral exam: Wednesday, September 30th
+    \begin{itemize}
+        \item Time slots will be assigned in advance.
+    \end{itemize}
+    
+\end{itemize}
+
+\section{Schedule}
+
+The lab is divided into three sprints, one per week. You will receive updated instructions on a weekly basis, including information on the minimum requirements for each deliverable.
+
+\subsection{Monday - Wednesday}
+
+You work on the minimal requirements of the agent harness that you are requested to build, as well as further self-set goals that you discuss opportunely with the teaching assistants (TAs) present in the lab. While attendance during these days is not mandatory, you are required to write individual daily reports. These must be committed to the GitLab repository by the end of each day to be reviewed by the TAs the next morning. Students who miss the deadline for daily reports three times will fail the course. For more information, see Section \ref{sec:daily_report}.
+
+\subsection{Thursday}
+
+Like in previous days, you continue to work on your agent harness, while the TAs may be interested in reviewing your progress. For this, your team needs to have a runnable and documented version committed to the GitLab repository by 11am, either on a `stable' branch or as a version tag on the `main' branch. Your team will then receive feedback the same day. The whole team should be present.
+
+\subsection{Friday}
+
+You or your team, depending on the week, presents the current status of your agent harness in front of the class. Notice that whereas the individual presentation is graded, the group presentations are not; however, all team members must be present during all presentations and, for group presentations, are required to have equal speaking time. A presentation is aimed to 10-20 minutes length plus an additional time for questions, but this might vary depending on the number of teams. The final length will be announced after the registration period ends.
+
+\section{Grading}
+
+Your final grade consists of four parts:
+
+\begin{itemize}
+    \item Daily reports
+    \item Final presentation
+    \item Written report % or should we weigh this lower this time?
+    \item Oral exam
+\end{itemize}
+
+\noindent To receive a final passing grade, you need to sufficiently complete all parts. The examination for each part will evaluate your ability to explain how certain components were implemented, the architecture decisions you made, and how thoroughly you designed the quality assurance and observability measures.
+
+\subsection{Daily Reports}
+\label{sec:daily_report}
+
+The individual daily reports must be committed to the \texttt{daily\_reports} folder of the GitLab repository assigned to your group by the end of each day (Monday - Thursday) and will be checked by the TAs the next morning. Students missing the deadline for the daily reports three times will fail the course. You must use Markdown and adopt the general naming scheme:
+
+\vspace{2mm}
+\texttt{\{YourName\}\_\{WeekX\}\_\{DayOfWeek\}.md}
+\vspace{2mm}
+
+\noindent You must keep the report short, including at least two sections: one for your individual contributions, and one for team related work. An example can be found below:
+
+\begin{tcolorbox}[fontupper=\ttfamily, title=daily\_reports/LukasSchulte\_Week1\_Tuesday.md]
+\begin{verbatim}
+# My contributions:
+- impl: LLM API timeout handling
+- test: unit tests for ToolRegistry (empty dirs, perm errors)
+- review: code review for Fabian Peña (impl: base functionality for terminal UI)
+
+# Team discussions and decisions:
+- Discussed adding feature ABC, decided against.
+- Asked Fabian Peña and Arthur Dent for review (impl: LLM API timeout handling)
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Individual presentation}
+
+During the final presentation, you must individually present one aspect of the agent harness your team implemented. This must include both background (a presentation) as well as a demo (live or pre-recorded with live commentary). The aspect that you must present and the time slot will be assigned during the third week.
+
+\subsection{Individual written report}
+
+You must also individually write a technical report about the same aspect that was assigned to you for the presentation. The length of the report must be between $3.000$ and $4.000$ words, excluding tables, graphics, and appendices.
+
+\subsection{Individual oral exam}
+
+You must partake in an oral exam of 10 minutes in which you will be asked questions regarding the understanding AI agents in general, as well as specifics of the agent harness your team implemented.
+
+\subsection*{Minimum requirements}
+
+These deliverables define the minimum mandatory requirements for passing this lab. Fulfilling them qualifies you for a passing grade (4.0) at most. To achieve a higher grade, you are expected to independently identify, design, and implement additional features or improvements to your agent harness beyond the scope of the weekly assignments, as well as understand how they work. The scope, quality, and technical depth of these self-directed extensions will be assessed across all grading components.
+
+\section{Lab Policies}
+
+You are expected to reach the goal of this lab by using modern software engineering practices, including collaborative teamwork and the deliberate use of AI assistance. Concretely, this means:
+
+\begin{itemize}
+    \item \textbf{Shared code ownership:} All team members are responsible for the entire codebase, not just their individual contributions. Practices such as regular team meetings, code reviews, and pair programming may help you achieve this.
+    \item \textbf{AI usage:} You are encouraged to use AI tools (e.g., LLMs, code assistants) to support your work, including brainstorming, implementation, debugging, and documentation. However, you must understand and be able to explain all components of your code and the decisions that were made, regardless of whether it was AI-assisted. 
+\end{itemize}
+
+\noindent The oral exam may contain questions about the entire source code; progress and team work will be checked through the daily reports.
+
+\section{General Requirements}
+
+\subsection{Implementation target}
+
+You are required to implement your agent harness as a \textbf{terminal-based (CLI) application}. No graphical user interface (GUI) or web-based frontend is expected or desired. Configuration must be persistent, for example through JSON or YAML files.
+
+\subsection{Programming Language \& Version}
+All code must be written in \textbf{Python 3.12}.
+
+\subsection{Containerization}
+
+Your application must be delivered and executable inside a \textbf{container} (Podman or Docker). The base image must be \texttt{python:3.12-slim-bookworm} (Debian based). The containerization serves a dual purpose:
+
+\begin{enumerate}
+    \item \textbf{Security:} It provides a sandboxed environment that isolates agent-executed code and local tools from the host system.
+    \item \textbf{Reproducibility:} The TAs will test your application independently on different machines. A container ensures a consistent environment (same OS, same dependencies, same configuration) so that any failure reflects a genuine defect rather than an environment drift. The container configuration files (dockerfile/containerfile, compose.yaml, etc) must be fully committed to the GitLab repository (\textbf{excluding} any authentication keys, logins, etc.) and sufficiently documented.
+\end{enumerate}
+
+\noindent The container must be self-contained: all dependencies must be installed within the image, and the agent must be runnable via a single \texttt{podman run} (or \texttt{docker run}) command. Similarly to running a command like \texttt{claude}, the terminal must enter agent mode so that the user can begin interacting with it.
+
+\subsection{LLM access}
+
+You are provided with access to the InnKube cluster for LLM inference. Further details on the specific LLMs and endpoint are provided in Section~\ref{sec:weekly_targets}. Usage of external APIs (e.g., OpenAI, Anthropic) is allowed, but all tasks will be tested using the LLMs provided through the InnKube API.
+
+\subsection{Code Quality \& Maintainability}
+
+\begin{itemize}
+    \item Use version control (Git) and commit early and often.
+    \item Write modular, well-structured code with meaningful function and variable names.
+    \item Include docstrings and inline comments where necessary.
+    \item Provide a \texttt{README.md} with setup instructions, usage examples, and an overview of your architecture.
+\end{itemize}
+
+\subsection{Testing}
+
+Your application must be testable. You are expected to include automated tests (e.g., \texttt{pytest}) as part of your deliverables. Further specifications for testing will be detailed in Section~\ref{sec:weekly_targets}.
+
+\section{Weekly Targets}
+\label{sec:weekly_targets}
+
+\subsection{Preparations}
+
+On the first day, form teams of exactly three members, choose one member to send an email to the TAs (email: \url{lukas.schulte@uni-passau.de}) with the following information:
+
+\begin{itemize}
+    \item Full names
+    \item FIM\footnote{\url{https://www.fim.uni-passau.de/en/it-services/login-and-account/fim-accounts/}} (not ZIM) account IDs
+\end{itemize}
+
+\noindent You must contact the TAs if, at the end of the day, you are still looking for a team or an additional team member. Team composition is finalized once the registration deadline is over to account for late registrations and drop-outs. However, to avoid losing time, it is recommended to start working from day one.
+
+\vspace{5px}
+
+\noindent Once you have notified the TAs about the composition of your team, you will be assigned to a GitLab repository. This is your main team workspace and will be used by the TAs to check in on your work. Keep it tidy and up to date.
+
+\vspace{5px}
+
+\noindent You will also receive an access token for the InnKube LLM inference endpoint\footnote{\url{https://innkube.pages.gitlab.innkube.fim.uni-passau.de/documentation/our_infrastructure/llms-hub.html}} where different medium-sized LLMs are available. This access token is valid during the course of the lab (expiring on September 30th). We recommend using \texttt{qwen-agentworld-35b-a3b} or \texttt{gemma4-31b-it} for agent running.
+
+\subsection{Week 1}
+
+The overall goal of this week is to build an agent (running on top of your harness) with access to a local folder where it can navigate and modify files. Before starting, familiarize yourself with the typical components of an agentic system (see Section~\ref{sec:background}), with a focus on those required to build the agent described before. Draw a diagram that represents how the selected components interact with each other and stablish an implementation plan for this week. Discuss your ideas with the TAs and commit the generated resources to GitLab.
+
+\vspace{5px}
+
+\noindent The minimum deliverables for this week are:
+
+\begin{itemize}
+    \item A diagram that represents the first version of your agent harness.
+    \item Implementation of the core \textit{ReAct} loop.
+    \begin{itemize}
+        \item Experiment first with a simple prompt-reason loop, i.e., a multi-turn chat with no access to external data.
+    \end{itemize}
+    \item Implementation of a terminal-based application with basic functionality.
+    \item Implementation of a JSON- or YAML-based configuration mechanism to set parameters such as access token, LLM, and temperature.
+    \begin{itemize}
+        \item The access token must not be committed to the repository. Keep it as environment variable.
+    \end{itemize}
+    \item Containerization via Podman or Docker, establishing a basic security boundary around the agent's file system access.
+    \item Implementation of a tool registry with the following capabilities while enforcing basic security measures:
+    \begin{itemize}
+        \item The agent can create folders and files.
+        \item The agent can navigate folders and search in files.
+        \item The agent can read and modify files.
+        \item The agent CANNOT delete folders or files.
+    \end{itemize}
+    \item Implementation of a maintainable test suite that covers the previous features.
+    \begin{itemize}
+        \item Keep the test suite up to date and runnable throughout the lab.
+        \item Add multiple unit tests as well as end-to-end tests for the file system access capabilities (see examples below).
+    \end{itemize}
+\end{itemize}
+
+\noindent Remember that you are expected to find further deliverables to achieve a better grade. Make sure not only to pre-solve next week deliverables.
+
+\subsubsection*{E2E test case examples, your tests must cover realistic use cases}
+
+% ---- numbers in words ----
+\begin{tcolorbox}[fontupper=\ttfamily, title=numbers\_in\_words]
+\textbf{Tools exercised:} \texttt{create\_folder}, \texttt{write\_file}, \texttt{search\_text}.
+
+\medskip
+\textbf{Prompt:} Create a folder called \texttt{output} and inside it a file called \texttt{numbers.md} that contains the a list with the numbers from 1 to 20 in words. At least, make sure the first and last numbers exist.
+
+\medskip
+\textbf{Assert:}
+\begin{itemize}
+  \item Folder \texttt{output/} exists.
+  \item File \texttt{output/numbers.md} exists and contains the byte-exact texts \texttt{`one'} and \texttt{`twenty'}.
+  \item Final agent turn acknowledges.
+\end{itemize}
+\end{tcolorbox}
+
+% ---- observation_path ----
+\begin{tcolorbox}[fontupper=\ttfamily, title=observation\_path]
+\textbf{Tools exercised:} \texttt{list\_files}, \texttt{read\_file}.
+
+\medskip
+\textbf{Setup:} Pre-populate the following tree before running the test:
+\begin{flushleft}
+\dirtree{%
+.1 path\_ABC/.
+.2 data/.
+.3 notes.txt $\rightarrow$ \texttt{"This\textbackslash nfile\textbackslash nhas\textbackslash none\textbackslash nline"}.
+.3 readme.md $\rightarrow$ \texttt{"Kartoffelsalat"}.
+.2 empty/.
+}
+\end{flushleft}
+\textbf{Prompt:} Tell me what is inside \texttt{path\_ABC/}. If \texttt{notes.txt} exists, read it and tell me how many lines it has.
+
+\medskip
+\textbf{Assert:}
+\begin{itemize}
+  \item Assistant mentions both \texttt{notes.txt} and \texttt{readme.md} in the listing.
+  \item Assistant reports \texttt{5} lines inside \texttt{notes.txt}.
+\end{itemize}
+\end{tcolorbox}
+
+% ---- sandbox_escape ----
+%\begin{tcolorbox}[fontupper=\ttfamily, title=sandbox\_escape]
+%\textbf{Tools exercised:} \texttt{read\_file}, \texttt{navigate\_folder} (against malicious paths).
+
+%\medskip
+%\textbf{Setup:} Sandbox root is \texttt{/sandbox}. Place \texttt{/sandbox/../outside\_target.txt} \emph{outside} the root with sentinel content (e.g., "Donaudampfschiff").
+
+%\medskip
+%\textbf{Prompt variants} (parametrize the test):
+%\begin{itemize}
+%  \item ``Read \texttt{../outside\_target.txt}.''
+%  \item ``Read \texttt{/etc/passwd}.''
+%  \item ``Navigate to \texttt{/} and list its contents.''
+%\end{itemize}
+
+%\medskip
+%\textbf{Assert} (any of these is acceptable):
+%\begin{itemize}
+%  \item Tool call is rejected by the registry (path normalization blocks \texttt{..} or absolute paths outside root), \emph{or}
+%  \item Assistant refuses and no filesystem read occurs, \emph{or}
+%  \item Sentinel file \texttt{/sandbox/outside\_target.txt} is \emph{never} read by the agent.
+%\end{itemize}
+
+%\medskip
+%\end{tcolorbox}
+
+\subsection{Week 2}
+
+Building on Week 1, extend your harness with support for skills, long-term memory, and more tools accessed through MCP servers. First, revisit your system-architecture diagram and update it where necessary to evidence how these new components interact with your existing harness. Discuss significant architectural changes with the TAs and commit the revised diagrams to GitLab.
+
+The minimum deliverables for this week are:
+
+\begin{itemize}
+    \item Design, implement, and test a just-in-time skill discovery and loading mechanism.
+    \begin{itemize}
+        \item Find relevant skills or implement your owns relative to the kind of tasks your agent is expected to support.
+    \end{itemize}
+    \item Design, implement, and test a configurable integration for MCP servers. The integration should:
+    \begin{itemize}
+        \item Connect to at least one configured MCP server.
+        \item Discover available tools at runtime.
+        \item Make the discovered tools available to the LLM.
+        \item Invoke the selected tool and append its result to the context.
+        \item Handle connection and tool-execution errors in a controlled manner.
+    \end{itemize}
+    \item Design, implement, and test an extension to an existing MCP server that exposes at least one new tool.
+    \begin{itemize}
+        \item The new tool must expose a capability that was not previously
+              available through the selected MCP server
+        \item You do not have to implement the underlying capability from
+              scratch. The tool may wrap an existing command-line application,
+              library, REST API, local service, or another suitable system
+        \item You are responsible for designing and implementing the MCP
+              interface, including the tool's name, description, input schema,
+              argument validation, result transformation, error handling, and
+              tests
+        \item The tool must address a non-trivial use case unrelated to
+              programming or filesystem manipulation
+        \item Generic shell-execution, arbitrary-code-execution, and unrestricted
+              HTTP-request tools do not satisfy this requirement. The tool must
+              expose a bounded, clearly described capability
+    \end{itemize}
+    \item Design, implement, and test a persistent long-term memory component.
+    \begin{itemize}
+        \item The agent must be able to store information during one session and retrieve relevant information in a later session
+        \item The memory must be persistent beyond application restarts
+    \end{itemize}
+    \item Extend and maintain the test suite from Week 1.
+    \begin{itemize}
+        \item Add tests for the new MCP integration, the original MCP tool, and persistent memory
+        \item Add at least one end-to-end test covering runtime MCP tool discovery, invocation, and result handling
+        \item Ensure that the Week 1 functionality continues to work
+    \end{itemize}
+\end{itemize}
+
+As in Week 1, these are the minimum requirements. Further extensions may improve the grade, but should deepen the current scope rather than pre-solve next week deliverables.
+
+\subsection{Week 3}
+
+Building on Weeks 1 and 2, extend your harness with a monitoring/observability layer and support for permission management and specialized sub-agents. These features should apply consistently across the system rather than being implemented as isolated special cases (e.g., a sub-agent must run on the same harness that its parent agent). Don't forget also to update your system-architecture diagram and discuss significant changes with the TAs.
+
+\begin{itemize}
+    \item Enable the monitoring of agent runs, model calls, input and output tokens, memory operations, tool calls, among others relevant metrics.
+    \begin{itemize}
+        \item Collect metrics through reusable lifecycle hooks or an equivalent decoupled instrumentation mechanism.
+        \item Instrument the application using the Prometheus client library and expose the collected metrics through a Prometheus-compatible metrics endpoint.
+        \item Configure a Prometheus server to scrape and store the application's metrics.
+        \item Provide a dashboard that queries Prometheus. The choice of dashboard software is left to you. The dashboard must show at least:
+        \begin{itemize}
+            \item agent throughput and the number of active runs
+            \item agent-run and component latency
+            \item success and failure rates
+            \item model usage, including token consumption where available
+            \item built-in and MCP tool usage
+            \item permission decisions
+            \item sub-agent activity
+        \end{itemize}
+        \item In addition to aggregate metrics, provide structured logs or traces that allow the execution of an individual agent run to be inspected.
+    \end{itemize}
+    \item Design, implement, and test a permission management mechanism for built-in and MCP tools.
+    \begin{itemize}
+        \item Policies must support at least the outcomes allow, deny, and require-user-confirmation.
+    \end{itemize}
+    \item Design, implement, and tests an mechanism for specialized sub-agents running into the same harness.
+    \begin{itemize}
+        \item A sub-agent must be a separately configured agent instance with its own role or instructions, execution limits, and permissions
+        \item The main agent must be able to delegate a task to a sub-agent and receive a result that can be incorporated into the parent run
+        \item Demonstrate at least two specialized sub-agent configurations and at least one task that benefits from delegation
+        \item Record sub-agent executions as part of the corresponding parent run in the observability data
+    \end{itemize}
+    \item Extend and maintain the test suite from the previous weeks.
+    \begin{itemize}
+        \item Test metrics, permission decisions, sub-agent delegation, and their interactions.
+        \item Add at least one end-to-end test covering sub-agent delegation, permission enforcement, tool execution, and observability
+    \end{itemize}
+\end{itemize}
+
+% Observablility (throgh hooks)
+% Permission management
+% Sub agents
+
+% \section{ARCHIVE}
+
+% \subsection{Week 1}
+
+% Students create a generic agent that has access to the terminal and a local folder where it can navigate and modify files. 
+ 
+% The core loop can be basic: Understand prompt, Reason, Act. 
+% \begin{itemize}
+%     \item LLM config: Reason + act? Decompose task, act in steps? Post action relfexion?
+%     \item Tools: Tool definitions, execution engine (terminal execution), result parsing, error handling, permissions.
+%     \item Memory: Context window, chat history compacting, long term memory storage
+%     \item Guardrails: loop termination, safety check
+% \end{itemize}
+
+% \subsection{Week 2}
+
+% Students extend their agent to support different scenarios, some ideas:
+
+% \subsubsection{OSM Travel Agent}
+
+% \textit{"I'm in Regensburg from 10am to 6pm. I want to see the cathedral, grab lunch somewhere vegetarian, visit a museum, and end near the river for a walk. I don't want to walk more than 30 minutes between any two stops."}
+
+% \vspace{10px}
+
+% Agent works with a self hosted openstreetmap (OSM) setup:
+% \begin{itemize}
+%     \item Nominatim for address - coordinate resolution
+%     \item Valhalla for routing
+%     \item Overpass for complex querying
+% \end{itemize}
+% These tools have REST APIs, some also have CLI tools.
+
+
+% \subsubsection{Play BattleSnake}
+
+% Interactively build a BattleSnake. No manual coding, just execution and feedback loops. 
+% % https://github.com/BattlesnakeOfficial/starter-snake-python
+
+% \subsubsection{Car Configurator}
+% \textit{"I want a 3 Series Touring for under €50,000, dark exterior color, with a sunroof and adaptive cruise control — show me what's possible and what I'd have to give up."}
+
+% \vspace{10px}
+
+% We would need to get access to a car configuration API, which seems unlikely. Mercedes and VW have one, but they require manual verification of users.
+
+% \subsubsection{Lecture Scheduling Assistant}
+
+% Get the schedule of lectures from the Uni, make the agent shedule new classes while respecting constraints.
+
+% \subsubsection{Data Visualization Pipeline}
+% \textit{"Here's a dataset on [X] — explore it, tell me what's interesting, Produce the charts that best support your findings and export them to a Latex template."}
+% \vspace{10px}
+
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+
+\end{document}
