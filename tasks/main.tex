@@ -271,10 +271,10 @@ The overall goal of this week is to build an agent (running on top of your harne
     \item Containerization via Podman or Docker, establishing a basic security boundary around the agent's file system access.
     \item Implementation of a tool registry with the following capabilities while enforcing basic security measures:
     \begin{itemize}
-        \item The agent can create folders and files.
-        \item The agent can navigate folders and search in files.
-        \item The agent can read and modify files.
-        \item The agent CANNOT delete folders or files.
+        \item The agent can create folders and files
+        \item The agent can navigate folders and search in files
+        \item The agent can read and modify files
+        \item The agent CANNOT delete folders or files
     \end{itemize}
     \item Implementation of a maintainable test suite that covers the previous features.
     \begin{itemize}
@@ -303,8 +303,8 @@ The overall goal of this week is to build an agent (running on top of your harne
 \end{itemize}
 \end{tcolorbox}
 
-% ---- observation_path ----
-\begin{tcolorbox}[fontupper=\ttfamily, title=observation\_path]
+% ---- find and inspect ----
+\begin{tcolorbox}[fontupper=\ttfamily, title=find\_and\_inspect]
 \textbf{Tools exercised:} \texttt{list\_files}, \texttt{read\_file}.
 
 \medskip
@@ -356,15 +356,15 @@ The overall goal of this week is to build an agent (running on top of your harne
 
 \subsection{Week 2}
 
-Building on Week 1, extend your harness with support for skills, long-term memory, and more tools accessed through MCP servers. First, revisit your system-architecture diagram and update it where necessary to evidence how these new components interact with your existing harness. Discuss significant architectural changes with the TAs and commit the revised diagrams to GitLab.
+Building on Week 1, extend your harness with support for long-term memory, and more tools accessed through MCP servers. First, revisit your system-architecture diagram and update it where necessary to evidence how these new components interact with your existing harness. Discuss significant architectural changes with the TAs and commit the revised diagrams to GitLab.
 
 The minimum deliverables for this week are:
 
 \begin{itemize}
-    \item Design, implement, and test a just-in-time skill discovery and loading mechanism.
-    \begin{itemize}
-        \item Find relevant skills or implement your owns relative to the kind of tasks your agent is expected to support.
-    \end{itemize}
+    %\item Design, implement, and test a just-in-time skill discovery and loading mechanism. The mechanism should:
+    %\begin{itemize}
+    %    \item Discover available skills at runtime.
+    %\end{itemize}
     \item Design, implement, and test a configurable integration for MCP servers. The integration should:
     \begin{itemize}
         \item Connect to at least one configured MCP server.
@@ -375,31 +375,22 @@ The minimum deliverables for this week are:
     \end{itemize}
     \item Design, implement, and test an extension to an existing MCP server that exposes at least one new tool.
     \begin{itemize}
-        \item The new tool must expose a capability that was not previously
-              available through the selected MCP server
-        \item You do not have to implement the underlying capability from
-              scratch. The tool may wrap an existing command-line application,
-              library, REST API, local service, or another suitable system
-        \item You are responsible for designing and implementing the MCP
-              interface, including the tool's name, description, input schema,
-              argument validation, result transformation, error handling, and
-              tests
-        \item The tool must address a non-trivial use case unrelated to
-              programming or filesystem manipulation
-        \item Generic shell-execution, arbitrary-code-execution, and unrestricted
-              HTTP-request tools do not satisfy this requirement. The tool must
-              expose a bounded, clearly described capability
+        \item The new tool must expose a capability that was not previously available through the selected MCP server.
+        \item You do not have to implement the underlying capability from scratch. For instance, the tool may wrap an existing command-line application, library, REST API, local service, or another suitable system.
+        \item You are responsible for designing and implementing the MCP interface, including the tool's name, description, input schema, argument validation, result transformation, error handling, and tests
+        \item The tool must address a non-trivial use case unrelated to programming or file system manipulation.
+        \item Generic shell-execution, arbitrary-code-execution, and unrestricted HTTP-request tools do not satisfy this requirement. The tool must expose a bounded, clearly described capability.
     \end{itemize}
     \item Design, implement, and test a persistent long-term memory component.
     \begin{itemize}
-        \item The agent must be able to store information during one session and retrieve relevant information in a later session
-        \item The memory must be persistent beyond application restarts
+        \item The agent must be able to store information during one session and retrieve relevant information in a later session, even after the application restarts.
+        \item The mechanism to decide what and when to store and retrieve information from the long-term memory must be clearly stated.
     \end{itemize}
     \item Extend and maintain the test suite from Week 1.
     \begin{itemize}
-        \item Add tests for the new MCP integration, the original MCP tool, and persistent memory
-        \item Add at least one end-to-end test covering runtime MCP tool discovery, invocation, and result handling
-        \item Ensure that the Week 1 functionality continues to work
+        \item Add tests for the MCP integration, the new MCP tool, and the long-term memory.
+        \item Add at least one end-to-end test covering runtime MCP tool discovery, invocation, and result handling.
+        \item Ensure that the Week 1 functionalities continue to work.
     \end{itemize}
 \end{itemize}
 
@@ -410,20 +401,20 @@ As in Week 1, these are the minimum requirements. Further extensions may improve
 Building on Weeks 1 and 2, extend your harness with a monitoring/observability layer and support for permission management and specialized sub-agents. These features should apply consistently across the system rather than being implemented as isolated special cases (e.g., a sub-agent must run on the same harness that its parent agent). Don't forget also to update your system-architecture diagram and discuss significant changes with the TAs.
 
 \begin{itemize}
-    \item Enable the monitoring of agent runs, model calls, input and output tokens, memory operations, tool calls, among others relevant metrics.
+    \item Enable monitoring of agent runs, LLM calls, input and output tokens, memory operations, tool calls, among others relevant metrics.
     \begin{itemize}
         \item Collect metrics through reusable lifecycle hooks or an equivalent decoupled instrumentation mechanism.
         \item Instrument the application using the Prometheus client library and expose the collected metrics through a Prometheus-compatible metrics endpoint.
         \item Configure a Prometheus server to scrape and store the application's metrics.
         \item Provide a dashboard that queries Prometheus. The choice of dashboard software is left to you. The dashboard must show at least:
         \begin{itemize}
-            \item agent throughput and the number of active runs
-            \item agent-run and component latency
-            \item success and failure rates
-            \item model usage, including token consumption where available
-            \item built-in and MCP tool usage
-            \item permission decisions
-            \item sub-agent activity
+            \item Agent throughput and the number of active runs
+            \item Agent-run and component latency
+            \item Success and failure rates
+            \item LLM usage, including token consumption where available
+            \item Built-in and MCP tool usage
+            \item Permission decisions
+            \item Sub-agents activity
         \end{itemize}
         \item In addition to aggregate metrics, provide structured logs or traces that allow the execution of an individual agent run to be inspected.
     \end{itemize}
@@ -431,17 +422,17 @@ Building on Weeks 1 and 2, extend your harness with a monitoring/observability l
     \begin{itemize}
         \item Policies must support at least the outcomes allow, deny, and require-user-confirmation.
     \end{itemize}
-    \item Design, implement, and tests an mechanism for specialized sub-agents running into the same harness.
+    \item Design, implement, and test specialized sub-agents running into the same harness.
     \begin{itemize}
-        \item A sub-agent must be a separately configured agent instance with its own role or instructions, execution limits, and permissions
-        \item The main agent must be able to delegate a task to a sub-agent and receive a result that can be incorporated into the parent run
-        \item Demonstrate at least two specialized sub-agent configurations and at least one task that benefits from delegation
-        \item Record sub-agent executions as part of the corresponding parent run in the observability data
+        \item A sub-agent must be a separately agent instance with its own role or instructions, context, execution limits, and permissions.
+        \item The parent agent must be able to delegate a task to a sub-agent and receive a result that can be incorporated into the parent context.
+        \item Demonstrate at least two specialized sub-agent configurations and at least one task that benefits from delegation.
+        \item Record properly sub-agent executions as part of the corresponding parent run in the observability data.
     \end{itemize}
     \item Extend and maintain the test suite from the previous weeks.
     \begin{itemize}
-        \item Test metrics, permission decisions, sub-agent delegation, and their interactions.
-        \item Add at least one end-to-end test covering sub-agent delegation, permission enforcement, tool execution, and observability
+        \item Test monitoring, permission management, sub-agent delegation, and their interactions.
+        \item Add at least one end-to-end test covering sub-agent delegation, permission enforcement, tool execution, and observability.
     \end{itemize}
 \end{itemize}
 
