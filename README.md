@@ -18,8 +18,8 @@ the lab. Each questionnaire has three parts:
 ## Repository structure
 
 ```
-lab-description/
-  ai_eng_lab_agentic_scaffold_planning_v1.pdf   planning document of the lab
+tasks/
+  main.tex                                      planning document of the lab
 survey/
   pre_form_a.tex   pre_form_b.tex               pre-test questionnaires, quiz Form A or B
   post_form_a.tex  post_form_b.tex              post-test questionnaires, quiz Form A or B
@@ -32,7 +32,7 @@ notebooks/
   paper-plots.ipynb                             analysis: all figures, tables and numbers of the paper
 ```
 
-### lab-description
+### tasks
 
 The planning document of the lab, which describes the learning objectives, the harness components the
 students build, and the schedule of the three weeks.
